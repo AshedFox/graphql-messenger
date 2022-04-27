@@ -1,0 +1,23 @@
+subscription ChatJoined {
+    chatJoined {
+        ...ChatUserModel
+    }
+}
+
+subscription ChatJoinedSelf {
+    chatJoinedSelf {
+        ...ChatModel
+    }
+}
+
+subscription ChatLeaved {
+    chatLeaved {
+        ...ChatUserModel
+    }
+}
+
+subscription ChatLeavedSelf {
+    chatLeavedSelf {
+        ...ChatModel
+    }
+}

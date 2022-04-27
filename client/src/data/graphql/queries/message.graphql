@@ -1,0 +1,14 @@
+query Messages($chatId: ID!, $lastId: ID, $lastCreatedAt: Timestamp, $count: Int) {
+    messages(chatId: $chatId, lastId: $lastId, lastCreatedAt: $lastCreatedAt, count: $count) {
+        messages {
+            ...MessageModel
+        },
+        hasMore
+    }
+}
+
+query Message($id: ID!) {
+    message(id: $id) {
+        ...MessageModel
+    }
+}

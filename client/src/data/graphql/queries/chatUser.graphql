@@ -1,0 +1,14 @@
+query ChatUsers($chatId: ID!, $lastUserId: ID, $count: Int, $lastCreatedAt: Timestamp) {
+    chatUsers(chatId: $chatId, lastUserId: $lastUserId, count: $count, lastCreatedAt: $lastCreatedAt) {
+        chatUsers {
+            ...ChatUserModel
+        },
+        hasMore
+    }
+}
+
+query ChatUser($chatId: ID!, $userId: ID!) {
+    chatUser(chatId: $chatId, userId: $userId) {
+        ...ChatUserModel
+    }
+}

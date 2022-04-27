@@ -1,0 +1,21 @@
+fragment ChatModel on Chat {
+    id,
+    name,
+    access,
+    status,
+    createdAt,
+    updatedAt,
+    creator {
+        id
+    },
+    lastMessage {
+        text,
+        createdAt,
+        sender {
+            name
+        }
+    },
+    avatar {
+        url
+    },
+}

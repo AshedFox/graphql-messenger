@@ -2,20 +2,25 @@ import {ChatStatus} from "./ChatStatus";
 import {ChatAccess} from "./ChatAccess";
 import {Field, ID, ObjectType} from "type-graphql";
 import {
-    BaseEntity,
+    AfterRecover,
     AfterSoftRemove,
+    BaseEntity,
     Column,
-    CreateDateColumn, DeleteDateColumn,
-    Entity, JoinColumn,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
     ManyToOne,
     OneToMany,
     PrimaryGeneratedColumn,
-    UpdateDateColumn, AfterRecover
+    UpdateDateColumn
 } from "typeorm";
 import {User} from "./User";
 import {Message} from "./Message";
 import {ChatUser} from "./ChatUser";
 import {File} from "./File";
+import {IsUrl, Length} from "class-validator";
 
 
 @ObjectType()
@@ -27,14 +32,18 @@ export class Chat extends BaseEntity {
 
     @Field()
     @Column()
+    @Length(3, 200)
+    @Index()
     name!: string;
 
     @Field()
     @CreateDateColumn()
+    @Index()
     createdAt!: Date;
 
     @Field()
     @UpdateDateColumn()
+    @Index()
     updatedAt!: Date;
 
     @Field({nullable: true})
@@ -43,14 +52,17 @@ export class Chat extends BaseEntity {
 
     @Field(() => ChatStatus)
     @Column({type: Number, enum: ChatStatus, default: ChatStatus.DEFAULT})
+    @Index()
     status!: ChatStatus;
 
     @Field(() => ChatAccess)
     @Column({type: String, enum: ChatAccess, default: ChatAccess.PUBLIC})
+    @Index()
     access!: ChatAccess;
 
     @Field({nullable: true})
     @Column({nullable: true})
+    @IsUrl()
     inviteUrl?: string;
 
     @Column({nullable: true})
@@ -72,6 +84,9 @@ export class Chat extends BaseEntity {
     @Field(() => [ChatUser])
     @OneToMany(() => ChatUser, chatUser => chatUser.chat)
     users!: ChatUser[];
+
+    @Field(() => Message, {nullable: true})
+    lastMessage?: Message;
 
     @Field(() => [Message])
     @OneToMany(() => Message, message => message.chat)

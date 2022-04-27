@@ -1,0 +1,17 @@
+fragment ChatUserModel on ChatUser {
+    status,
+    role,
+    chat {
+        id
+    },
+    user {
+        id,
+        name,
+        createdAt,
+        updatedAt,
+        status,
+        avatar {
+            url
+        },
+    }
+}

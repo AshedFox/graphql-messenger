@@ -1,0 +1,6 @@
+mutation SingleUpload($input: Upload!) {
+    singleUpload(file: $input) {
+        id,
+        url
+    }
+}

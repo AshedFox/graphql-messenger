@@ -1,0 +1,38 @@
+fragment MessageModel on Message {
+    id,
+    text,
+    createdAt,
+    updatedAt
+    sender {
+        id,
+        name,
+        avatar {
+            url
+        },
+    },
+    chat {
+        id,
+        name,
+        avatar {
+            url
+        }
+    }
+    replyTo {
+        id,
+        text,
+        createdAt,
+        updatedAt
+        sender {
+            name,
+            avatar {
+                url
+            },
+        },
+    },
+    attachments {
+        originalName,
+        createdAt,
+        url,
+        type
+    }
+}

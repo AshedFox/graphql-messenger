@@ -1,0 +1,11 @@
+subscription ChatAdded{
+    chatAdded {
+        ...ChatModel
+    }
+}
+
+subscription ChatRemoved {
+    chatRemoved {
+        ...ChatModel
+    }
+}

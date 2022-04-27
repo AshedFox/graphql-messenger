@@ -23,9 +23,9 @@ export const removeTokensCookies = (res: Response) => {
     res.clearCookie('X-REFRESH-TOKEN');
 }
 
-export const getAccessTokenFromCookies = (cookies: {[p: string]: string}): string|undefined => cookies['X-ACCESS-TOKEN'];
+export const getAccessTokenFromCookies = (cookies: { [p: string]: string }): string | undefined => cookies['X-ACCESS-TOKEN'];
 
-export const getRefreshTokenFromCookies = (cookies: {[p: string]: string}): string|undefined => cookies['X-REFRESH-TOKEN'];
+export const getRefreshTokenFromCookies = (cookies: { [p: string]: string }): string | undefined => cookies['X-REFRESH-TOKEN'];
 
 
 export default {

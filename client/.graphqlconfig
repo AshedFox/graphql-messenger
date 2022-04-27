@@ -1,0 +1,4 @@
+{
+  "name": "Messenger Schema",
+  "schemaPath": "./src/data/schema.graphql"
+}

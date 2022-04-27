@@ -7,7 +7,7 @@ import {RefreshToken} from "../enitities/RefreshToken";
 import {createTokensCookies, removeTokensCookies} from "../../services/cookiesService";
 import {LoginInput} from "../inputs/LoginInput";
 import {generateAccessToken} from "../../services/authService";
-import {ApolloError, AuthenticationError} from "apollo-server-express";
+import {AuthenticationError} from "apollo-server-express";
 import {authMiddleware} from "../../middlewares/authMiddleware";
 import {File} from "../enitities/File";
 import {ForbiddenError} from "apollo-server-core";
@@ -16,9 +16,9 @@ import {UserStatus} from "../enitities/UserStatus";
 
 @Resolver(User)
 export class UserResolver {
-    @FieldResolver(() => File)
-    async avatar(@Root() user: User) {
-        return File.findOneBy({id: user.avatarId});
+    @FieldResolver(() => File, {nullable: true})
+    async avatar(@Root() user: User): Promise<File | null> {
+        return user.avatarId ? await File.findOneBy({id: user.avatarId}) : null;
     }
 
     @UseMiddleware(authMiddleware)
@@ -46,12 +46,12 @@ export class UserResolver {
             const user = await User.create({...signUpInput}).save();
 
             const accessToken = generateAccessToken(user.id);
-            const refreshToken = RefreshToken.create({userId: user.id});
+            const refreshToken = await RefreshToken.create({userId: user.id}).save();
             createTokensCookies(context.res, accessToken, refreshToken.id);
 
             return user;
         } catch {
-            throw new ApolloError("Something went wrong!");
+            throw new Error("Something went wrong!");
         }
     }
 
@@ -74,6 +74,7 @@ export class UserResolver {
     @Mutation(() => Boolean)
     async logout(@Ctx() context: MyContext) {
         removeTokensCookies(context.res);
+        return true;
     }
 
     @UseMiddleware(authMiddleware)

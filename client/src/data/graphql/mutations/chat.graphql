@@ -1,0 +1,9 @@
+mutation AddChat($input: AddChatInput!) {
+    addChat(input: $input) {
+        ...ChatModel
+    }
+}
+
+mutation RemoveChat($id: ID!) {
+    removeChat(id: $id)
+}

@@ -2,7 +2,7 @@ import jwt, {JwtPayload} from "jsonwebtoken";
 import {getAccessTokenFromCookies, getRefreshTokenFromCookies} from "./cookiesService";
 import {RefreshToken} from "../data/enitities/RefreshToken";
 
-export const checkAuth = (cookies: {[p: string]: string}): string|undefined => {
+export const checkAuth = (cookies: { [p: string]: string }): string | undefined => {
     try {
         const accessToken = getAccessTokenFromCookies(cookies);
 
@@ -28,11 +28,11 @@ export const generateAccessToken = (userId: string) => {
     });
 }
 
-export const getUserIdFromRefreshToken = async (cookies: {[p: string]: string}): Promise<string|undefined> => {
+export const getUserIdFromRefreshToken = async (cookies: { [p: string]: string }): Promise<string | undefined> => {
     const refreshTokenId = getRefreshTokenFromCookies(cookies);
 
     if (refreshTokenId) {
-        const refreshToken =  await RefreshToken.findOneBy({id: refreshTokenId});
+        const refreshToken = await RefreshToken.findOneBy({id: refreshTokenId});
 
         if (refreshToken) {
             return refreshToken.userId;
@@ -42,7 +42,7 @@ export const getUserIdFromRefreshToken = async (cookies: {[p: string]: string}):
     return undefined;
 }
 
-export const tryRefreshTokens = async (cookies: {[p: string]: string}): Promise<{ userId: string, refreshToken: string, accessToken: string } | undefined> => {
+export const tryRefreshTokens = async (cookies: { [p: string]: string }): Promise<{ userId: string, refreshToken: string, accessToken: string } | undefined> => {
     try {
         const refreshTokenId = getRefreshTokenFromCookies(cookies);
 
@@ -56,7 +56,11 @@ export const tryRefreshTokens = async (cookies: {[p: string]: string}): Promise<
 
                 await refreshToken.remove();
 
-                return {userId: newRefreshToken.userId, refreshToken: newRefreshToken.id, accessToken: generateAccessToken(newRefreshToken.userId)};
+                return {
+                    userId: newRefreshToken.userId,
+                    refreshToken: newRefreshToken.id,
+                    accessToken: generateAccessToken(newRefreshToken.userId)
+                };
             }
         }
 

@@ -1,0 +1,5 @@
+mutation AddMessage($input: AddMessageInput!) {
+    addMessage(input: $input) {
+        ...MessageModel
+    }
+}

@@ -1,9 +1,14 @@
 import {
     Arg,
+    Args,
     Ctx,
+    Field,
     FieldResolver,
     ID,
-    Mutation, Publisher, PubSub,
+    Mutation,
+    ObjectType,
+    Publisher,
+    PubSub,
     Query,
     Resolver,
     ResolverFilterData,
@@ -18,48 +23,84 @@ import {authMiddleware} from "../../middlewares/authMiddleware";
 import {ForbiddenError} from "apollo-server-core";
 import {Chat} from "../enitities/Chat";
 import {User} from "../enitities/User";
-import {ChatUser} from "../enitities/ChatUser";
 import {SubscriptionType} from "./SubscriptionType";
+import {MessagesArgs} from "../args/MessagesArgs";
+import {ChatUser} from "../enitities/ChatUser";
+
+@ObjectType()
+export class MessagesResult {
+    @Field(() => [Message])
+    messages!: Message[];
+
+    @Field()
+    hasMore!: boolean;
+}
 
 @Resolver(Message)
 export class MessageResolver {
-    @FieldResolver()
-    async replyTo(@Root() message: Message) {
-        return await Message.findOneBy({id: message.replyToId});
+    @FieldResolver(() => Message, {nullable: true})
+    async replyTo(@Root() message: Message): Promise<Message | null> {
+        return message.replyToId ? await Message.findOneBy({id: message.replyToId}) : null;
     }
 
-    @FieldResolver()
-    async chat(@Root() message: Message) {
+    @FieldResolver(() => Chat)
+    async chat(@Root() message: Message): Promise<Chat | null> {
         return await Chat.findOneBy({id: message.chatId});
     }
 
-    @FieldResolver()
-    async sender(@Root() message: Message) {
+    @FieldResolver(() => User)
+    async sender(@Root() message: Message): Promise<User | null> {
         return await User.findOneBy({id: message.senderId});
     }
 
-    @Query(() => [Message])
-    async messages(): Promise<Message[]> {
-        return await Message.find({order: {createdAt: "desc"}});
+
+    @Query(() => MessagesResult)
+    async messages(@Args() {count, chatId, lastId, lastCreatedAt}: MessagesArgs): Promise<MessagesResult> {
+        let queryBuilder = Message.createQueryBuilder("message")
+            .where("message.chatId = :chatId", {chatId});
+
+        if (lastCreatedAt && lastId) {
+            queryBuilder = queryBuilder
+                .andWhere('(message.createdAt, message.id) < (:createdAt, :id)', {createdAt: lastCreatedAt, id: lastId})
+        }
+
+        queryBuilder = queryBuilder
+            .leftJoinAndSelect("message.attachments", "attachment")
+            .take(count)
+            .orderBy({
+                "message.createdAt": "DESC",
+                "message.id": "DESC",
+            })
+
+        const [messages] = await queryBuilder.getManyAndCount();
+
+        return {
+            messages,
+            hasMore: count === messages.length
+        };
     }
 
     @Query(() => Message, {nullable: true})
-    async message(@Arg("id", () => ID) id: string): Promise<Message|null> {
+    async message(@Arg("id", () => ID) id: string): Promise<Message | null> {
         return await Message.findOneBy({id});
     }
 
+    @UseMiddleware(authMiddleware)
     @Mutation(() => Message)
     async addMessage(@Arg("input") addMessageInput: AddMessageInput, @Ctx() context: MyContext,
-                     @PubSub(SubscriptionType.MESSAGE_ADDED) publish: Publisher<Message>): Promise<Message|null>
-    {
-        const message = await Message.create({...addMessageInput, senderId: context.req.userId}).save();
+                     @PubSub(SubscriptionType.MESSAGE_ADDED) publish: Publisher<Message>): Promise<Message | null> {
+        const message = await Message.create({
+            ...addMessageInput,
+            senderId: context.req.userId,
+            attachments: []
+        }).save();
         await publish(message);
         return message;
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Message, {nullable: true})
-    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext): Promise<Message|null> {
+    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext): Promise<Message | null> {
         const messageToRecover = await Message.findOne({where: {id}, withDeleted: true});
 
         if (messageToRecover && messageToRecover.deletedAt) {
@@ -77,8 +118,7 @@ export class MessageResolver {
     @UseMiddleware(authMiddleware)
     @Mutation(() => Boolean)
     async removeMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                        @PubSub(SubscriptionType.MESSAGE_REMOVED) publish: Publisher<Message>): Promise<boolean>
-    {
+                        @PubSub(SubscriptionType.MESSAGE_REMOVED) publish: Publisher<Message>): Promise<boolean> {
         const messageToDelete = await Message.findOneBy({id});
 
         if (messageToDelete) {
@@ -96,21 +136,26 @@ export class MessageResolver {
         return false;
     }
 
-    @Subscription(() => Message,{
+    @Subscription(() => Message, {
         topics: SubscriptionType.MESSAGE_ADDED,
-        filter: ({payload, args}: ResolverFilterData<Message, {chatId: string}, {userId: string}>) =>
-            payload.chatId === args.chatId
+        filter: async ({payload, context}: ResolverFilterData<Message, {}, { userId: string }>) => {
+            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
+            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
+        }
+
     })
-    async messageAdded(@Root() message: Message, @Arg("chatId") chatId: string): Promise<Message> {
+    async messageAdded(@Root() message: Message): Promise<Message> {
         return message;
     }
 
-    @Subscription(() => Message,{
+    @Subscription(() => Message, {
         topics: SubscriptionType.MESSAGE_REMOVED,
-        filter: ({payload, args}: ResolverFilterData<Message, {chatId: string}, {userId: string}>) =>
-            payload.chatId === args.chatId
+        filter: async ({payload, context}: ResolverFilterData<Message, {}, { userId: string }>) => {
+            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
+            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
+        }
     })
-    async messageRemoved(@Root() message: Message, @Arg("chatId") chatId: string): Promise<Message> {
+    async messageRemoved(@Root() message: Message): Promise<Message> {
         return message;
     }
 }

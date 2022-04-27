@@ -1,13 +1,21 @@
 import {UserStatus} from "./UserStatus";
 import {Field, ID, ObjectType} from "type-graphql";
 import {
-    BaseEntity, AfterSoftRemove,
+    AfterRecover,
+    AfterSoftRemove,
+    BaseEntity,
     Column,
-    CreateDateColumn, DeleteDateColumn, Entity, JoinColumn,
-    ManyToOne, OneToMany,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
-    UpdateDateColumn, AfterRecover
+    UpdateDateColumn
 } from "typeorm";
+import {IsEmail, Length, MaxLength} from "class-validator";
 import {File} from "./File";
 import {RefreshToken} from "./RefreshToken";
 
@@ -20,22 +28,29 @@ export class User extends BaseEntity {
     id!: string;
 
     @Field()
+    @IsEmail()
     @Column({unique: true})
+    @Index()
     email!: string;
 
     @Column()
+    @MaxLength(72)
     password!: string;
 
     @Field()
     @Column()
+    @Length(3, 200)
+    @Index()
     name!: string;
 
     @Field()
     @CreateDateColumn()
+    @Index()
     createdAt!: Date;
 
     @Field()
     @UpdateDateColumn()
+    @Index()
     updatedAt!: Date;
 
     @Field({nullable: true})
@@ -44,6 +59,7 @@ export class User extends BaseEntity {
 
     @Field(() => UserStatus)
     @Column({type: Number, enum: UserStatus, default: UserStatus.DEFAULT})
+    @Index()
     status!: UserStatus;
 
     @Column({nullable: true})

@@ -1,0 +1,17 @@
+query Users {
+    users {
+        ...UserModel
+    }
+}
+
+query User($id: ID!) {
+    user(id: $id) {
+        ...UserModel
+    }
+}
+
+query Me {
+    me {
+       ...UserModel
+    }
+}

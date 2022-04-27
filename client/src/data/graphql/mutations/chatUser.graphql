@@ -1,0 +1,9 @@
+mutation JoinChat($chatId: ID!) {
+    joinChat(chatId: $chatId) {
+        ...ChatUserModel
+    }
+}
+
+mutation LeaveChat($chatId: ID!) {
+    leaveChat(chatId: $chatId)
+}

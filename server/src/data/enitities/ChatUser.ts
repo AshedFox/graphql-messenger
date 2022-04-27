@@ -1,10 +1,22 @@
 import {ChatUserStatus} from "./ChatUserStatus";
 import {ChatUserRole} from "./ChatUserRole";
-import {BaseEntity, AfterSoftRemove, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, AfterRecover} from "typeorm";
-import {Field, ID, ObjectType} from "type-graphql";
+import {
+    AfterRecover,
+    AfterSoftRemove,
+    BaseEntity,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    PrimaryColumn,
+    UpdateDateColumn
+} from "typeorm";
+import {Field, ObjectType} from "type-graphql";
 import {Chat} from "./Chat";
 import {User} from "./User";
-import {ChatStatus} from "./ChatStatus";
 
 
 @ObjectType()
@@ -28,11 +40,27 @@ export class ChatUser extends BaseEntity {
 
     @Field(() => ChatUserStatus)
     @Column({type: Number, enum: ChatUserStatus, default: ChatUserStatus.DEFAULT})
+    @Index()
     status!: ChatUserStatus;
 
     @Field(() => ChatUserRole)
     @Column({type: String, enum: ChatUserRole, default: ChatUserRole.DEFAULT})
+    @Index()
     role!: ChatUserRole;
+
+    @Field()
+    @CreateDateColumn()
+    @Index()
+    createdAt!: Date;
+
+    @Field()
+    @UpdateDateColumn()
+    @Index()
+    updatedAt!: Date;
+
+    @Field({nullable: true})
+    @DeleteDateColumn()
+    deletedAt?: Date;
 
     @AfterSoftRemove()
     async updateStatusOnSoftRemove() {

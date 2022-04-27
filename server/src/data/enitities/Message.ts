@@ -2,8 +2,12 @@ import {Field, ID, ObjectType} from "type-graphql";
 import {
     BaseEntity,
     Column,
-    CreateDateColumn, DeleteDateColumn,
-    Entity, JoinColumn, JoinTable,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    JoinTable,
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
@@ -12,6 +16,7 @@ import {
 import {User} from "./User";
 import {Chat} from "./Chat";
 import {File} from "./File";
+import {Length} from "class-validator";
 
 
 @ObjectType()
@@ -23,14 +28,18 @@ export class Message extends BaseEntity {
 
     @Field()
     @Column()
+    @Length(1, 5000)
+    @Index()
     text!: string;
 
     @Field()
     @CreateDateColumn()
+    @Index()
     createdAt!: Date;
 
     @Field()
     @UpdateDateColumn()
+    @Index()
     updatedAt!: Date;
 
     @Field({nullable: true})

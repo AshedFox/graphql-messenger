@@ -2,6 +2,5 @@
 /server/node_modules
 /server/package-lock.json
 /server/.env
-/client
 /client/node_modules
 /client/package-lock.json

@@ -23,10 +23,9 @@ import {ChatUserResolver} from "./data/resolvers/ChatUserResolver";
 import {WebSocketServer} from "ws";
 import {useServer} from "graphql-ws/lib/use/ws";
 import {ApolloServerPluginDrainHttpServer} from "apollo-server-core";
-import jwt, {JwtPayload} from "jsonwebtoken";
-import {checkAuth, getUserIdFromRefreshToken, tryRefreshTokens} from "./services/authService";
-import {createTokensCookies} from "./services/cookiesService";
-
+import {checkAuth, getUserIdFromRefreshToken} from "./services/authService";
+import {graphqlUploadExpress} from "graphql-upload";
+import {FileResolver} from "./data/resolvers/FileResolver";
 
 dotenv.config();
 
@@ -44,7 +43,7 @@ const main = async () => {
         username: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: "graphql-chat",
-        entities: [Chat, User, ChatUser, File, Message,  RefreshToken],
+        entities: [Chat, User, ChatUser, File, Message, RefreshToken],
         synchronize: true,
         migrations: [path.join(__dirname, "./migrations/*")]
     });
@@ -63,10 +62,11 @@ const main = async () => {
     app.use(cors(corsOptions))
     app.use(cookieParser());
     app.use(express.json());
-    app.use(express.urlencoded({ extended: false }));
+    app.use(express.urlencoded({extended: false}));
+    app.use(graphqlUploadExpress({maxFileSize: 50000000, maxFiles: 10}));
 
     const schema = await buildSchema({
-        resolvers: [ChatResolver, UserResolver, MessageResolver, ChatUserResolver],
+        resolvers: [ChatResolver, UserResolver, MessageResolver, ChatUserResolver, FileResolver],
         dateScalarMode: "timestamp",
         validate: false
     });
@@ -108,7 +108,7 @@ const main = async () => {
         schema: schema,
         context: ({req, res}: MyContext) => ({req, res}),
         plugins: [
-            ApolloServerPluginDrainHttpServer({ httpServer }),
+            ApolloServerPluginDrainHttpServer({httpServer}),
             {
                 async serverWillStart() {
                     return {

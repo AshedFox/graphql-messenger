@@ -1,0 +1,76 @@
+query Chats($lastId: ID, $count: Int, $lastCreatedAt: Timestamp) {
+    chats(lastId: $lastId, count: $count, lastCreatedAt: $lastCreatedAt) {
+        chats {
+            ...ChatModel
+        },
+        hasMore
+    }
+}
+
+query SearchChats($lastId: ID, $count: Int, $lastCreatedAt: Timestamp, $name: String) {
+    searchChats(lastId: $lastId, count: $count, lastCreatedAt: $lastCreatedAt, name: $name) {
+        chats {
+            ...ChatModel
+        },
+        hasMore
+    }
+}
+
+query Chat($id: ID!) {
+    chat(id: $id) {
+        id,
+        name,
+        access,
+        status,
+        createdAt,
+        updatedAt,
+        creator {
+            id
+        },
+        avatar {
+            url
+        },
+        messages {
+            id,
+            text,
+            createdAt,
+            updatedAt
+            sender {
+                id,
+                name,
+                avatar {
+                    url
+                },
+            },
+            replyTo {
+                id,
+                text,
+                createdAt,
+                updatedAt
+                sender {
+                    name,
+                    avatar {
+                        url
+                    },
+                },
+            },
+            attachments {
+                originalName,
+                createdAt,
+                url,
+                type
+            }
+        },
+        users {
+            status,
+            role,
+            user {
+                id,
+                name,
+                avatar {
+                    url
+                },
+            }
+        }
+    }
+}
