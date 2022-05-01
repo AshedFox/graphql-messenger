@@ -5,17 +5,30 @@ fragment ChatModel on Chat {
     status,
     createdAt,
     updatedAt,
+    lastSeen,
     creator {
-        id
+        ...UserModel
     },
     lastMessage {
+        id,
         text,
         createdAt,
         sender {
-            name
+            ...UserModel
         }
     },
     avatar {
+        id,
         url
+    },
+}
+
+fragment FullChatModel on Chat {
+    ...ChatModel,
+    messages {
+        ...MessageModel
+    },
+    users {
+        ...ChatUserModel
     },
 }

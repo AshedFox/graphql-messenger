@@ -1,16 +1,18 @@
 import React from 'react';
 import styled from "styled-components";
-import Avatar from "../../shared/Avatar";
-import {ChatModel} from "../../../types/models";
+import {ChatProps} from "./types";
+import {formatDatetime} from "../../../services/datetimeService";
+import {Avatar} from '../../UI';
 
 
-const Wrapper = styled.div<{ selected?: boolean }>`
+const Container = styled.div<{ selected?: boolean }>`
   display: grid;
   grid-template-columns: 56px auto;
   align-items: center;
   padding: 10px 30px;
   gap: 10px;
   width: 100%;
+  position: relative;
   cursor: pointer;
 
   background-color: ${props => props.selected ? `${props.theme.uiPrimaryFocusBg} !important` : props.theme.uiPrimaryBg};
@@ -25,6 +27,7 @@ const Wrapper = styled.div<{ selected?: boolean }>`
 const Data = styled.div`
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 
   gap: 5px;
 `
@@ -32,25 +35,28 @@ const Data = styled.div`
 const Header = styled.div`
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
 
   gap: 5px;
 `
 
 const Name = styled.div`
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 15px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: ${props => props.theme.primaryText}
 `
 
 const Time = styled.div`
   font-weight: 500;
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
   color: ${props => props.theme.optionalText}
 `
 
-const LastMessage = styled.div`
+const LastMessage = styled.div<{ exists?: boolean }>`
   padding: 8px 9px;
 
   background-color: ${props => props.theme.uiSecondaryBg};
@@ -62,28 +68,37 @@ const LastMessage = styled.div`
   white-space: nowrap;
   font-weight: 500;
   font-size: 13px;
-  color: ${props => props.theme.primaryText};
+  color: ${props => (props.exists ?? true) ? props.theme.primaryText : props.theme.optionalText};
 `
 
-type Props = {
-    chat: ChatModel,
-    selected?: boolean,
-    onClick?: () => void
-};
+const SeenMarker = styled.div`
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  background-color: darkcyan;
+`
 
-const Chat = ({chat, selected, onClick}: Props) => {
-    return (
-        <Wrapper selected={selected} onClick={onClick}>
-            <Avatar _size={"medium"} src={chat.avatar?.url} alt={"chat_icon"} _stretch/>
-            <Data>
-                <Header>
-                    <Name>{chat.name}</Name>
-                    <Time>{chat.lastMessage ? new Date(chat.lastMessage.createdAt).toLocaleTimeString() : ""}</Time>
-                </Header>
-                <LastMessage>{chat.lastMessage ? `${chat.lastMessage.sender.name}: ${chat.lastMessage.text}` : " "}</LastMessage>
-            </Data>
-        </Wrapper>
-    );
-};
+const Chat = ({chat, selected, onClick}: ChatProps) => (
+    <Container selected={selected} onClick={onClick}>
+        {chat.lastMessage?.createdAt > chat.lastSeen &&
+            <SeenMarker/>
+        }
+        <Avatar size={"medium"} src={chat.avatar?.url} alt={"chat_icon"}/>
+        <Data>
+            <Header>
+                <Name>{chat.name}</Name>
+                <Time>{chat.lastMessage ? formatDatetime(chat.lastMessage.createdAt) : ""}</Time>
+            </Header>
+            {chat.lastMessage ?
+                <LastMessage>{`${chat.lastMessage.sender.name}: ${chat.lastMessage.text}`}</LastMessage> :
+                <LastMessage exists={false}>Пока пусто...</LastMessage>
+            }
+        </Data>
+    </Container>
+);
+
 
 export default Chat;

@@ -7,11 +7,10 @@ import {
     ID,
     Mutation,
     ObjectType,
-    Publisher,
     PubSub,
+    PubSubEngine,
     Query,
     Resolver,
-    ResolverFilterData,
     Root,
     Subscription,
     UseMiddleware
@@ -25,7 +24,6 @@ import {Chat} from "../enitities/Chat";
 import {User} from "../enitities/User";
 import {SubscriptionType} from "./SubscriptionType";
 import {MessagesArgs} from "../args/MessagesArgs";
-import {ChatUser} from "../enitities/ChatUser";
 
 @ObjectType()
 export class MessagesResult {
@@ -64,9 +62,12 @@ export class MessageResolver {
                 .andWhere('(message.createdAt, message.id) < (:createdAt, :id)', {createdAt: lastCreatedAt, id: lastId})
         }
 
+        if (count !== -1) {
+            queryBuilder = queryBuilder.take(count);
+        }
+
         queryBuilder = queryBuilder
             .leftJoinAndSelect("message.attachments", "attachment")
-            .take(count)
             .orderBy({
                 "message.createdAt": "DESC",
                 "message.id": "DESC",
@@ -88,13 +89,14 @@ export class MessageResolver {
     @UseMiddleware(authMiddleware)
     @Mutation(() => Message)
     async addMessage(@Arg("input") addMessageInput: AddMessageInput, @Ctx() context: MyContext,
-                     @PubSub(SubscriptionType.MESSAGE_ADDED) publish: Publisher<Message>): Promise<Message | null> {
+                     @PubSub() pubSub: PubSubEngine): Promise<Message | null> {
         const message = await Message.create({
             ...addMessageInput,
             senderId: context.req.userId,
             attachments: []
         }).save();
-        await publish(message);
+
+        await pubSub.publish(`${SubscriptionType.MESSAGE_ADDED}_${message.chatId}`, message);
         return message;
     }
 
@@ -118,17 +120,17 @@ export class MessageResolver {
     @UseMiddleware(authMiddleware)
     @Mutation(() => Boolean)
     async removeMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                        @PubSub(SubscriptionType.MESSAGE_REMOVED) publish: Publisher<Message>): Promise<boolean> {
-        const messageToDelete = await Message.findOneBy({id});
+                        @PubSub() pubSub: PubSubEngine): Promise<boolean> {
+        const message = await Message.findOneBy({id});
 
-        if (messageToDelete) {
-            if (messageToDelete.senderId !== context.req.userId) {
+        if (message) {
+            if (message.senderId !== context.req.userId) {
                 throw new ForbiddenError("No access!");
             }
 
-            await messageToDelete.softRemove();
-            await messageToDelete.save();
-            await publish(messageToDelete);
+            await message.softRemove();
+            await message.save();
+            await pubSub.publish(`${SubscriptionType.MESSAGE_REMOVED}_${message.chatId}`, message);
 
             return true;
         }
@@ -137,25 +139,24 @@ export class MessageResolver {
     }
 
     @Subscription(() => Message, {
-        topics: SubscriptionType.MESSAGE_ADDED,
-        filter: async ({payload, context}: ResolverFilterData<Message, {}, { userId: string }>) => {
-            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
-            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
-        }
+        topics: (data) => `${SubscriptionType.MESSAGE_ADDED}_${data.args.chatId}`,
 
     })
-    async messageAdded(@Root() message: Message): Promise<Message> {
+    async messageAdded(@Root() message: Message, @Arg("chatId", () => ID) chatId: string): Promise<Message> {
         return message;
     }
 
     @Subscription(() => Message, {
-        topics: SubscriptionType.MESSAGE_REMOVED,
-        filter: async ({payload, context}: ResolverFilterData<Message, {}, { userId: string }>) => {
-            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
-            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
-        }
+        topics: (data) => `${SubscriptionType.MESSAGE_REMOVED}_${data.args.chatId}`,
     })
-    async messageRemoved(@Root() message: Message): Promise<Message> {
+    async messageRemoved(@Root() message: Message, @Arg("chatId", () => ID) chatId: string): Promise<Message> {
+        return message;
+    }
+
+    @Subscription(() => Message, {
+        topics: (data) => `${SubscriptionType.MESSAGE_UPDATED}_${data.args.chatId}`,
+    })
+    async messageUpdated(@Root() message: Message, @Arg("chatId", () => ID) chatId: string): Promise<Message> {
         return message;
     }
 }

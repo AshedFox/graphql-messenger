@@ -4,16 +4,13 @@ fragment MessageModel on Message {
     createdAt,
     updatedAt
     sender {
-        id,
-        name,
-        avatar {
-            url
-        },
+        ...UserModel
     },
     chat {
         id,
         name,
         avatar {
+            id,
             url
         }
     }
@@ -30,6 +27,7 @@ fragment MessageModel on Message {
         },
     },
     attachments {
+        id,
         originalName,
         createdAt,
         url,

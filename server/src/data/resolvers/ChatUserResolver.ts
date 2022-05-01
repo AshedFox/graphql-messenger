@@ -11,7 +11,6 @@ import {
     PubSubEngine,
     Query,
     Resolver,
-    ResolverFilterData,
     Root,
     Subscription,
     UseMiddleware
@@ -73,8 +72,11 @@ export class ChatUserResolver {
                 );
         }
 
+        if (count !== -1) {
+            queryBuilder = queryBuilder.take(count);
+        }
+
         queryBuilder = queryBuilder
-            .take(count)
             .orderBy({
                 "chatUser.createdAt": "ASC",
                 "chatUser.userId": "ASC",
@@ -106,8 +108,8 @@ export class ChatUserResolver {
         if (!chatUser) {
             const chatUser = await ChatUser.create({chatId: chatId, userId: context.req.userId}).save();
 
-            await pubSub.publish(SubscriptionType.CHAT_JOINED, chatUser);
-            await pubSub.publish(`${SubscriptionType.CHAT_JOINED_SELF}_${context.req.userId}`, chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
+            await pubSub.publish(`${SubscriptionType.CHAT_JOINED}_${chatUser.userId}`, chat);
 
             return chatUser;
         } else if (chatUser.status & ChatUserStatus.LEAVED) {
@@ -118,8 +120,8 @@ export class ChatUserResolver {
             await chatUser.recover();
             await chatUser.save();
 
-            await pubSub.publish(SubscriptionType.CHAT_JOINED, chatUser);
-            await pubSub.publish(`${SubscriptionType.CHAT_JOINED_SELF}_${context.req.userId}`, chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
+            await pubSub.publish(`${SubscriptionType.CHAT_JOINED}_${chatUser.userId}`, chat);
 
             return chatUser;
         }
@@ -137,18 +139,47 @@ export class ChatUserResolver {
             throw new Error("Chat with passed id not found!");
         }
 
-        const chatUserToDelete = await ChatUser.findOneBy({chatId: chatId, userId: context.req.userId});
+        const chatUser = await ChatUser.findOneBy({chatId: chatId, userId: context.req.userId});
 
-        if (chatUserToDelete) {
-            if (chatUserToDelete.userId !== context.req.userId) {
+        if (chatUser) {
+            if (chatUser.userId !== context.req.userId) {
                 throw new ForbiddenError("No access!");
             }
 
-            await chatUserToDelete.softRemove();
-            await chatUserToDelete.save();
+            await chatUser.softRemove();
+            await chatUser.save();
 
-            await pubSub.publish(SubscriptionType.CHAT_LEAVED, chatUserToDelete);
-            await pubSub.publish(`${SubscriptionType.CHAT_LEAVED_SELF}_${context.req.userId}`, chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_USER_LEAVED}_${chatUser.chatId}`, chatUser);
+            await pubSub.publish(`${SubscriptionType.CHAT_LEAVED}_${chatUser.userId}`, chat);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    @UseMiddleware(authMiddleware)
+    @Mutation(() => Boolean)
+    async changeLastSeen(@Arg("chatId", () => ID) chatId: string,
+                         @Arg("lastSeen") lastSeen: Date,
+                         @Ctx() context: MyContext, @PubSub() pubSub: PubSubEngine): Promise<boolean> {
+        const chat = await Chat.findOneBy({id: chatId})
+
+        if (!chat) {
+            throw new Error("Chat with passed id not found!");
+        }
+
+        const chatUser = await ChatUser.findOneBy({chatId: chatId, userId: context.req.userId});
+
+        if (chatUser) {
+            if (chatUser.userId !== context.req.userId) {
+                throw new ForbiddenError("No access!");
+            }
+
+            chatUser.lastSeen = lastSeen;
+            await chatUser.save();
+
+            await pubSub.publish(`${SubscriptionType.CHANGE_LAST_SEEN}_${chatUser.userId}`, chatUser);
 
             return true;
         }
@@ -157,38 +188,30 @@ export class ChatUserResolver {
     }
 
     @Subscription(() => ChatUser, {
-        topics: SubscriptionType.CHAT_JOINED,
-        filter: async ({payload, context}: ResolverFilterData<ChatUser, {}, { userId: string }>) => {
-            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
-            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
-        }
+        topics: (data) => `${SubscriptionType.CHANGE_LAST_SEEN}_${data.args.userId}`,
     })
-    async chatJoined(@Root() chatUser: ChatUser): Promise<ChatUser> {
+    async lastSeenChanged(@Root() chatUser: ChatUser, @Arg("userId", () => ID) userId: string): Promise<ChatUser> {
         return chatUser;
-    }
-
-    @Subscription(() => Chat, {
-        topics: ({context}: ResolverFilterData<ChatUser, {}, { userId: string }>) => `${SubscriptionType.CHAT_JOINED_SELF}_${context.userId}`,
-    })
-    async chatJoinedSelf(@Root() chat: Chat): Promise<Chat> {
-        return chat;
     }
 
     @Subscription(() => ChatUser, {
-        topics: SubscriptionType.CHAT_LEAVED,
-        filter: async ({payload, context}: ResolverFilterData<ChatUser, {}, { userId: string }>) => {
-            const chatUsers = await ChatUser.find({where: {chatId: payload.chatId}});
-            return chatUsers.find(chatUser => chatUser.userId === context.userId) !== null;
-        }
+        topics: (data) => `${SubscriptionType.CHAT_USER_JOINED}_${data.args.chatId}`,
     })
-    async chatLeaved(@Root() chatUser: ChatUser): Promise<ChatUser> {
+    async chatUserJoined(@Root() chatUser: ChatUser, @Arg("chatId", () => ID) chatId: string): Promise<ChatUser> {
         return chatUser;
     }
 
-    @Subscription(() => Chat, {
-        topics: ({context}: ResolverFilterData<ChatUser, {}, { userId: string }>) => `${SubscriptionType.CHAT_LEAVED_SELF}_${context.userId}`,
+    @Subscription(() => ChatUser, {
+        topics: (data) => `${SubscriptionType.CHAT_USER_LEAVED}_${data.args.chatId}`,
     })
-    async chatLeavedSelf(@Root() chat: Chat): Promise<Chat> {
-        return chat;
+    async chatUserLeaved(@Root() chatUser: ChatUser, @Arg("chatId", () => ID) chatId: string): Promise<ChatUser> {
+        return chatUser;
+    }
+
+    @Subscription(() => ChatUser, {
+        topics: (data) => `${SubscriptionType.CHAT_USER_UPDATED}_${data.args.chatId}`,
+    })
+    async chatUserUpdated(@Root() chatUser: ChatUser, @Arg("chatId", () => ID) chatId: string): Promise<ChatUser> {
+        return chatUser;
     }
 }

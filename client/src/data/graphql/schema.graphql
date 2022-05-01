@@ -5,10 +5,10 @@ type Query {
     users: [User!]!
     user(id: ID!): User!
     me: User!
-    messages(chatId: ID!, count: Int = 50, lastId: ID, lastCreatedAt: Timestamp): MessagesResult!
+    messages(chatId: ID!, count: Int = 20, lastId: ID, lastCreatedAt: Timestamp): MessagesResult!
     message(id: ID!): Message
     chatUser(chatId: ID!, userId: ID!): ChatUser!
-    chatUsers(chatId: ID!, count: Int = 40, lastUserId: ID, lastCreatedAt: Timestamp): ChatUsersResult!
+    chatUsers(chatId: ID!, count: Int = 20, lastUserId: ID, lastCreatedAt: Timestamp): ChatUsersResult!
 }
 
 type ChatsResult {
@@ -24,6 +24,7 @@ type Chat {
     deletedAt: Timestamp
     status: ChatStatus!
     access: ChatAccess!
+    lastSeen: Timestamp
     inviteUrl: String
     avatar: File
     creator: User!
@@ -92,6 +93,7 @@ type ChatUser {
     createdAt: Timestamp!
     updatedAt: Timestamp!
     deletedAt: Timestamp
+    lastSeen: Timestamp
 }
 
 enum ChatUserStatus {
@@ -140,6 +142,7 @@ type Mutation {
     removeChat(id: ID!): Boolean!
     signUp(input: SignUpInput!): User!
     login(input: LoginInput!): User!
+    updateProfile(input: UpdateProfileInput!): User
     logout: Boolean!
     removeMe: Boolean!
     recoverUser(id: ID!): User
@@ -149,6 +152,7 @@ type Mutation {
     removeMessage(id: ID!): Boolean!
     joinChat(chatId: ID!): ChatUser
     leaveChat(chatId: ID!): Boolean!
+    changeLastSeen(lastSeen: Timestamp!, chatId: ID!): Boolean!
     singleUpload(file: Upload!): File!
 }
 
@@ -168,6 +172,11 @@ input LoginInput {
     password: String!
 }
 
+input UpdateProfileInput {
+    name: String
+    avatarId: ID
+}
+
 input AddMessageInput {
     text: String!
     replyToId: ID
@@ -178,12 +187,17 @@ input AddMessageInput {
 scalar Upload
 
 type Subscription {
-    chatAdded: Chat!
-    chatRemoved: Chat!
-    messageAdded: Message!
-    messageRemoved: Message!
-    chatJoined: ChatUser!
-    chatJoinedSelf: Chat!
-    chatLeaved: ChatUser!
-    chatLeavedSelf: Chat!
+    chatAdded(userId: ID!): Chat!
+    chatUpdated(chatId: ID!): Chat!
+    chatRemoved(chatId: ID!): Chat!
+    chatJoined(userId: ID!): Chat!
+    chatLeaved(userId: ID!): Chat!
+    profileUpdated(userId: ID!): User!
+    messageAdded(chatId: ID!): Message!
+    messageRemoved(chatId: ID!): Message!
+    messageUpdated(chatId: ID!): Message!
+    lastSeenChanged(userId: ID!): ChatUser!
+    chatUserJoined(chatId: ID!): ChatUser!
+    chatUserLeaved(chatId: ID!): ChatUser!
+    chatUserUpdated(chatId: ID!): ChatUser!
 }

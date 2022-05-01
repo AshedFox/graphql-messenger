@@ -41,6 +41,7 @@ export type Chat = {
     id: Scalars['ID'];
     inviteUrl?: Maybe<Scalars['String']>;
     lastMessage?: Maybe<Message>;
+    lastSeen?: Maybe<Scalars['Timestamp']>;
     messages: Array<Message>;
     name: Scalars['String'];
     status: ChatStatus;
@@ -66,6 +67,7 @@ export type ChatUser = {
     chat: Chat;
     createdAt: Scalars['Timestamp'];
     deletedAt?: Maybe<Scalars['Timestamp']>;
+    lastSeen?: Maybe<Scalars['Timestamp']>;
     role: ChatUserRole;
     status: ChatUserStatus;
     updatedAt: Scalars['Timestamp'];
@@ -147,6 +149,7 @@ export type Mutation = {
     __typename?: 'Mutation';
     addChat: Chat;
     addMessage: Message;
+    changeLastSeen: Scalars['Boolean'];
     joinChat?: Maybe<ChatUser>;
     leaveChat: Scalars['Boolean'];
     login: User;
@@ -160,6 +163,7 @@ export type Mutation = {
     removeUser: Scalars['Boolean'];
     signUp: User;
     singleUpload: File;
+    updateProfile?: Maybe<User>;
 };
 
 
@@ -170,6 +174,12 @@ export type MutationAddChatArgs = {
 
 export type MutationAddMessageArgs = {
     input: AddMessageInput;
+};
+
+
+export type MutationChangeLastSeenArgs = {
+    chatId: Scalars['ID'];
+    lastSeen: Scalars['Timestamp'];
 };
 
 
@@ -225,6 +235,11 @@ export type MutationSignUpArgs = {
 
 export type MutationSingleUploadArgs = {
     file: Scalars['Upload'];
+};
+
+
+export type MutationUpdateProfileArgs = {
+    input: UpdateProfileInput;
 };
 
 export type Query = {
@@ -302,13 +317,88 @@ export type SignUpInput = {
 export type Subscription = {
     __typename?: 'Subscription';
     chatAdded: Chat;
-    chatJoined: ChatUser;
-    chatJoinedSelf: Chat;
-    chatLeaved: ChatUser;
-    chatLeavedSelf: Chat;
+    chatJoined: Chat;
+    chatLeaved: Chat;
     chatRemoved: Chat;
+    chatUpdated: Chat;
+    chatUserJoined: ChatUser;
+    chatUserLeaved: ChatUser;
+    chatUserUpdated: ChatUser;
+    lastSeenChanged: ChatUser;
     messageAdded: Message;
     messageRemoved: Message;
+    messageUpdated: Message;
+    profileUpdated: User;
+};
+
+
+export type SubscriptionChatAddedArgs = {
+    userId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatJoinedArgs = {
+    userId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatLeavedArgs = {
+    userId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatRemovedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatUpdatedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatUserJoinedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatUserLeavedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionChatUserUpdatedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionLastSeenChangedArgs = {
+    userId: Scalars['ID'];
+};
+
+
+export type SubscriptionMessageAddedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionMessageRemovedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionMessageUpdatedArgs = {
+    chatId: Scalars['ID'];
+};
+
+
+export type SubscriptionProfileUpdatedArgs = {
+    userId: Scalars['ID'];
+};
+
+export type UpdateProfileInput = {
+    avatarId?: InputMaybe<Scalars['ID']>;
+    name?: InputMaybe<Scalars['String']>;
 };
 
 export type User = {
@@ -330,20 +420,24 @@ export enum UserStatus {
     Deleted = 'DELETED'
 }
 
-export type ChatModelFragment = { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null };
+export type ChatModelFragment = { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null };
 
-export type ChatUserModelFragment = { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } };
+export type FullChatModelFragment = {
+    __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> }>, users: Array<{ __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } }>, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null
+};
 
-export type MessageModelFragment = { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> };
+export type ChatUserModelFragment = { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
-export type UserModelFragment = { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null };
+export type MessageModelFragment = { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> };
+
+export type UserModelFragment = { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null };
 
 export type AddChatMutationVariables = Exact<{
     input: AddChatInput;
 }>;
 
 
-export type AddChatMutation = { __typename?: 'Mutation', addChat: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null } };
+export type AddChatMutation = { __typename?: 'Mutation', addChat: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
 export type RemoveChatMutationVariables = Exact<{
     id: Scalars['ID'];
@@ -357,7 +451,15 @@ export type JoinChatMutationVariables = Exact<{
 }>;
 
 
-export type JoinChatMutation = { __typename?: 'Mutation', joinChat?: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } } | null };
+export type JoinChatMutation = { __typename?: 'Mutation', joinChat?: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null };
+
+export type ChangeLastSeenMutationVariables = Exact<{
+    chatId: Scalars['ID'];
+    lastSeen: Scalars['Timestamp'];
+}>;
+
+
+export type ChangeLastSeenMutation = { __typename?: 'Mutation', changeLastSeen: boolean };
 
 export type LeaveChatMutationVariables = Exact<{
     chatId: Scalars['ID'];
@@ -378,21 +480,28 @@ export type AddMessageMutationVariables = Exact<{
 }>;
 
 
-export type AddMessageMutation = { __typename?: 'Mutation', addMessage: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> } };
+export type AddMessageMutation = { __typename?: 'Mutation', addMessage: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> } };
 
 export type SignUpMutationVariables = Exact<{
     input: SignUpInput;
 }>;
 
 
-export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } };
+export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
 export type LoginMutationVariables = Exact<{
     input: LoginInput;
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
+
+export type UpdateProfileMutationVariables = Exact<{
+    input: UpdateProfileInput;
+}>;
+
+
+export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile?: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } | null };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -406,7 +515,7 @@ export type ChatsQueryVariables = Exact<{
 }>;
 
 
-export type ChatsQuery = { __typename?: 'Query', chats: { __typename?: 'ChatsResult', hasMore: boolean, chats: Array<{ __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null }> } };
+export type ChatsQuery = { __typename?: 'Query', chats: { __typename?: 'ChatsResult', hasMore: boolean, chats: Array<{ __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null }> } };
 
 export type SearchChatsQueryVariables = Exact<{
     lastId?: InputMaybe<Scalars['ID']>;
@@ -416,14 +525,18 @@ export type SearchChatsQueryVariables = Exact<{
 }>;
 
 
-export type SearchChatsQuery = { __typename?: 'Query', searchChats: { __typename?: 'ChatsResult', hasMore: boolean, chats: Array<{ __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null }> } };
+export type SearchChatsQuery = { __typename?: 'Query', searchChats: { __typename?: 'ChatsResult', hasMore: boolean, chats: Array<{ __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null }> } };
 
 export type ChatQueryVariables = Exact<{
     id: Scalars['ID'];
 }>;
 
 
-export type ChatQuery = { __typename?: 'Query', chat?: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, avatar?: { __typename?: 'File', url: string } | null, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> }>, users: Array<{ __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, user: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null } }> } | null };
+export type ChatQuery = {
+    __typename?: 'Query', chat?: {
+        __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> }>, users: Array<{ __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } }>, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null
+    } | null
+};
 
 export type ChatUsersQueryVariables = Exact<{
     chatId: Scalars['ID'];
@@ -433,7 +546,7 @@ export type ChatUsersQueryVariables = Exact<{
 }>;
 
 
-export type ChatUsersQuery = { __typename?: 'Query', chatUsers: { __typename?: 'ChatUsersResult', hasMore: boolean, chatUsers: Array<{ __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } }> } };
+export type ChatUsersQuery = { __typename?: 'Query', chatUsers: { __typename?: 'ChatUsersResult', hasMore: boolean, chatUsers: Array<{ __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } }> } };
 
 export type ChatUserQueryVariables = Exact<{
     chatId: Scalars['ID'];
@@ -441,7 +554,7 @@ export type ChatUserQueryVariables = Exact<{
 }>;
 
 
-export type ChatUserQuery = { __typename?: 'Query', chatUser: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } } };
+export type ChatUserQuery = { __typename?: 'Query', chatUser: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } };
 
 export type MessagesQueryVariables = Exact<{
     chatId: Scalars['ID'];
@@ -451,67 +564,130 @@ export type MessagesQueryVariables = Exact<{
 }>;
 
 
-export type MessagesQuery = { __typename?: 'Query', messages: { __typename?: 'MessagesResult', hasMore: boolean, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> }> } };
+export type MessagesQuery = { __typename?: 'Query', messages: { __typename?: 'MessagesResult', hasMore: boolean, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> }> } };
 
 export type MessageQueryVariables = Exact<{
     id: Scalars['ID'];
 }>;
 
 
-export type MessageQuery = { __typename?: 'Query', message?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> } | null };
+export type MessageQuery = { __typename?: 'Query', message?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> } | null };
 
 export type UsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null }> };
+export type UsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }> };
 
 export type UserQueryVariables = Exact<{
     id: Scalars['ID'];
 }>;
 
 
-export type UserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } };
+export type UserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } };
+export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
-export type ChatAddedSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ChatAddedSubscription = { __typename?: 'Subscription', chatAdded: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null } };
-
-export type ChatRemovedSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type ChatAddedSubscriptionVariables = Exact<{
+    userId: Scalars['ID'];
+}>;
 
 
-export type ChatRemovedSubscription = { __typename?: 'Subscription', chatRemoved: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null } };
+export type ChatAddedSubscription = { __typename?: 'Subscription', chatAdded: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
-export type ChatJoinedSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ChatJoinedSubscription = { __typename?: 'Subscription', chatJoined: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } } };
-
-export type ChatJoinedSelfSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type ChatUpdatedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
 
 
-export type ChatJoinedSelfSubscription = { __typename?: 'Subscription', chatJoinedSelf: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null } };
+export type ChatUpdatedSubscription = { __typename?: 'Subscription', chatUpdated: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
-export type ChatLeavedSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ChatLeavedSubscription = { __typename?: 'Subscription', chatLeaved: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', url: string } | null } } };
-
-export type ChatLeavedSelfSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type ChatRemovedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
 
 
-export type ChatLeavedSelfSubscription = { __typename?: 'Subscription', chatLeavedSelf: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, creator: { __typename?: 'User', id: string }, lastMessage?: { __typename?: 'Message', text: string, createdAt: any, sender: { __typename?: 'User', name: string } } | null, avatar?: { __typename?: 'File', url: string } | null } };
+export type ChatRemovedSubscription = { __typename?: 'Subscription', chatRemoved: { __typename?: 'Chat', id: string } };
 
-export type MessageAddedSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type ChatJoinedSubscriptionVariables = Exact<{
+    userId: Scalars['ID'];
+}>;
 
 
-export type MessageAddedSubscription = { __typename?: 'Subscription', messageAdded: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', originalName: string, createdAt: any, url: string, type: FileType }> } };
+export type ChatJoinedSubscription = { __typename?: 'Subscription', chatJoined: { __typename?: 'Chat', id: string, name: string, access: ChatAccess, status: ChatStatus, createdAt: any, updatedAt: any, lastSeen?: any | null, creator: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, lastMessage?: { __typename?: 'Message', id: string, text: string, createdAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } | null, avatar?: { __typename?: 'File', id: string, url: string } | null } };
 
+export type ChatLeavedSubscriptionVariables = Exact<{
+    userId: Scalars['ID'];
+}>;
+
+
+export type ChatLeavedSubscription = { __typename?: 'Subscription', chatLeaved: { __typename?: 'Chat', id: string } };
+
+export type ChatUserJoinedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
+
+
+export type ChatUserJoinedSubscription = { __typename?: 'Subscription', chatUserJoined: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } };
+
+export type ChatUserLeavedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
+
+
+export type ChatUserLeavedSubscription = { __typename?: 'Subscription', chatUserLeaved: { __typename?: 'ChatUser', user: { __typename?: 'User', id: string }, chat: { __typename?: 'Chat', id: string } } };
+
+export type ChatUserUpdatedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
+
+
+export type ChatUserUpdatedSubscription = { __typename?: 'Subscription', chatUserUpdated: { __typename?: 'ChatUser', status: ChatUserStatus, role: ChatUserRole, chat: { __typename?: 'Chat', id: string }, user: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } } };
+
+export type LastSeenChangedSubscriptionVariables = Exact<{
+    userId: Scalars['ID'];
+}>;
+
+
+export type LastSeenChangedSubscription = { __typename?: 'Subscription', lastSeenChanged: { __typename?: 'ChatUser', lastSeen?: any | null, chat: { __typename?: 'Chat', id: string } } };
+
+export type MessageAddedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
+
+
+export type MessageAddedSubscription = { __typename?: 'Subscription', messageAdded: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null }, chat: { __typename?: 'Chat', id: string, name: string, avatar?: { __typename?: 'File', id: string, url: string } | null }, replyTo?: { __typename?: 'Message', id: string, text: string, createdAt: any, updatedAt: any, sender: { __typename?: 'User', name: string, avatar?: { __typename?: 'File', url: string } | null } } | null, attachments: Array<{ __typename?: 'File', id: string, originalName: string, createdAt: any, url: string, type: FileType }> } };
+
+export type MessageRemovedSubscriptionVariables = Exact<{
+    chatId: Scalars['ID'];
+}>;
+
+
+export type MessageRemovedSubscription = { __typename?: 'Subscription', messageRemoved: { __typename?: 'Message', id: string, chat: { __typename?: 'Chat', id: string } } };
+
+export type ProfileUpdatedSubscriptionVariables = Exact<{
+    userId: Scalars['ID'];
+}>;
+
+
+export type ProfileUpdatedSubscription = { __typename?: 'Subscription', profileUpdated: { __typename?: 'User', id: string, name: string, email: string, createdAt: any, updatedAt: any, status: UserStatus, avatar?: { __typename?: 'File', id: string, url: string } | null } };
+
+export const UserModelFragmentDoc = gql`
+    fragment UserModel on User {
+        id
+        name
+        email
+        createdAt
+        updatedAt
+        status
+        avatar {
+            id
+            url
+        }
+    }
+`;
 export const ChatModelFragmentDoc = gql`
     fragment ChatModel on Chat {
         id
@@ -520,40 +696,24 @@ export const ChatModelFragmentDoc = gql`
         status
         createdAt
         updatedAt
+        lastSeen
         creator {
-            id
+            ...UserModel
         }
         lastMessage {
+            id
             text
             createdAt
             sender {
-                name
+                ...UserModel
             }
         }
         avatar {
+            id
             url
         }
     }
-`;
-export const ChatUserModelFragmentDoc = gql`
-    fragment ChatUserModel on ChatUser {
-        status
-        role
-        chat {
-            id
-        }
-        user {
-            id
-            name
-            createdAt
-            updatedAt
-            status
-            avatar {
-                url
-            }
-        }
-    }
-`;
+${UserModelFragmentDoc}`;
 export const MessageModelFragmentDoc = gql`
     fragment MessageModel on Message {
         id
@@ -561,16 +721,13 @@ export const MessageModelFragmentDoc = gql`
         createdAt
         updatedAt
         sender {
-            id
-            name
-            avatar {
-                url
-            }
+            ...UserModel
         }
         chat {
             id
             name
             avatar {
+                id
                 url
             }
         }
@@ -587,26 +744,39 @@ export const MessageModelFragmentDoc = gql`
             }
         }
         attachments {
+            id
             originalName
             createdAt
             url
             type
         }
     }
-`;
-export const UserModelFragmentDoc = gql`
-    fragment UserModel on User {
-        id
-        name
-        email
-        createdAt
-        updatedAt
+${UserModelFragmentDoc}`;
+export const ChatUserModelFragmentDoc = gql`
+    fragment ChatUserModel on ChatUser {
         status
-        avatar {
-            url
+        role
+        chat {
+            id
+        }
+        user {
+            ...UserModel
         }
     }
-`;
+${UserModelFragmentDoc}`;
+export const FullChatModelFragmentDoc = gql`
+    fragment FullChatModel on Chat {
+        ...ChatModel
+        messages {
+            ...MessageModel
+        }
+        users {
+            ...ChatUserModel
+        }
+    }
+    ${ChatModelFragmentDoc}
+    ${MessageModelFragmentDoc}
+${ChatUserModelFragmentDoc}`;
 export const AddChatDocument = gql`
     mutation AddChat($input: AddChatInput!) {
         addChat(input: $input) {
@@ -707,6 +877,39 @@ export function useJoinChatMutation(baseOptions?: Apollo.MutationHookOptions<Joi
 export type JoinChatMutationHookResult = ReturnType<typeof useJoinChatMutation>;
 export type JoinChatMutationResult = Apollo.MutationResult<JoinChatMutation>;
 export type JoinChatMutationOptions = Apollo.BaseMutationOptions<JoinChatMutation, JoinChatMutationVariables>;
+export const ChangeLastSeenDocument = gql`
+    mutation ChangeLastSeen($chatId: ID!, $lastSeen: Timestamp!) {
+        changeLastSeen(chatId: $chatId, lastSeen: $lastSeen)
+    }
+`;
+export type ChangeLastSeenMutationFn = Apollo.MutationFunction<ChangeLastSeenMutation, ChangeLastSeenMutationVariables>;
+
+/**
+ * __useChangeLastSeenMutation__
+ *
+ * To run a mutation, you first call `useChangeLastSeenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useChangeLastSeenMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [changeLastSeenMutation, { data, loading, error }] = useChangeLastSeenMutation({
+ *   variables: {
+ *      chatId: // value for 'chatId'
+ *      lastSeen: // value for 'lastSeen'
+ *   },
+ * });
+ */
+export function useChangeLastSeenMutation(baseOptions?: Apollo.MutationHookOptions<ChangeLastSeenMutation, ChangeLastSeenMutationVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useMutation<ChangeLastSeenMutation, ChangeLastSeenMutationVariables>(ChangeLastSeenDocument, options);
+}
+
+export type ChangeLastSeenMutationHookResult = ReturnType<typeof useChangeLastSeenMutation>;
+export type ChangeLastSeenMutationResult = Apollo.MutationResult<ChangeLastSeenMutation>;
+export type ChangeLastSeenMutationOptions = Apollo.BaseMutationOptions<ChangeLastSeenMutation, ChangeLastSeenMutationVariables>;
 export const LeaveChatDocument = gql`
     mutation LeaveChat($chatId: ID!) {
         leaveChat(chatId: $chatId)
@@ -876,6 +1079,40 @@ export function useLoginMutation(baseOptions?: Apollo.MutationHookOptions<LoginM
 export type LoginMutationHookResult = ReturnType<typeof useLoginMutation>;
 export type LoginMutationResult = Apollo.MutationResult<LoginMutation>;
 export type LoginMutationOptions = Apollo.BaseMutationOptions<LoginMutation, LoginMutationVariables>;
+export const UpdateProfileDocument = gql`
+    mutation updateProfile($input: UpdateProfileInput!) {
+        updateProfile(input: $input) {
+            ...UserModel
+        }
+    }
+${UserModelFragmentDoc}`;
+export type UpdateProfileMutationFn = Apollo.MutationFunction<UpdateProfileMutation, UpdateProfileMutationVariables>;
+
+/**
+ * __useUpdateProfileMutation__
+ *
+ * To run a mutation, you first call `useUpdateProfileMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProfileMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProfileMutation, { data, loading, error }] = useUpdateProfileMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateProfileMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProfileMutation, UpdateProfileMutationVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useMutation<UpdateProfileMutation, UpdateProfileMutationVariables>(UpdateProfileDocument, options);
+}
+
+export type UpdateProfileMutationHookResult = ReturnType<typeof useUpdateProfileMutation>;
+export type UpdateProfileMutationResult = Apollo.MutationResult<UpdateProfileMutation>;
+export type UpdateProfileMutationOptions = Apollo.BaseMutationOptions<UpdateProfileMutation, UpdateProfileMutationVariables>;
 export const LogoutDocument = gql`
     mutation logout {
         logout
@@ -1000,63 +1237,10 @@ export type SearchChatsQueryResult = Apollo.QueryResult<SearchChatsQuery, Search
 export const ChatDocument = gql`
     query Chat($id: ID!) {
         chat(id: $id) {
-            id
-            name
-            access
-            status
-            createdAt
-            updatedAt
-            creator {
-                id
-            }
-            avatar {
-                url
-            }
-            messages {
-                id
-                text
-                createdAt
-                updatedAt
-                sender {
-                    id
-                    name
-                    avatar {
-                        url
-                    }
-                }
-                replyTo {
-                    id
-                    text
-                    createdAt
-                    updatedAt
-                    sender {
-                        name
-                        avatar {
-                            url
-                        }
-                    }
-                }
-                attachments {
-                    originalName
-                    createdAt
-                    url
-                    type
-                }
-            }
-            users {
-                status
-                role
-                user {
-                    id
-                    name
-                    avatar {
-                        url
-                    }
-                }
-            }
+            ...FullChatModel
         }
     }
-`;
+${FullChatModelFragmentDoc}`;
 
 /**
  * __useChatQuery__
@@ -1368,8 +1552,8 @@ export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const ChatAddedDocument = gql`
-    subscription ChatAdded {
-        chatAdded {
+    subscription ChatAdded($userId: ID!) {
+        chatAdded(userId: $userId) {
             ...ChatModel
         }
     }
@@ -1387,23 +1571,55 @@ ${ChatModelFragmentDoc}`;
  * @example
  * const { data, loading, error } = useChatAddedSubscription({
  *   variables: {
+ *      userId: // value for 'userId'
  *   },
  * });
  */
-export function useChatAddedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatAddedSubscription, ChatAddedSubscriptionVariables>) {
+export function useChatAddedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatAddedSubscription, ChatAddedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
     return Apollo.useSubscription<ChatAddedSubscription, ChatAddedSubscriptionVariables>(ChatAddedDocument, options);
 }
 
 export type ChatAddedSubscriptionHookResult = ReturnType<typeof useChatAddedSubscription>;
 export type ChatAddedSubscriptionResult = Apollo.SubscriptionResult<ChatAddedSubscription>;
-export const ChatRemovedDocument = gql`
-    subscription ChatRemoved {
-        chatRemoved {
+export const ChatUpdatedDocument = gql`
+    subscription ChatUpdated($chatId: ID!) {
+        chatUpdated(chatId: $chatId) {
             ...ChatModel
         }
     }
 ${ChatModelFragmentDoc}`;
+
+/**
+ * __useChatUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useChatUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useChatUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useChatUpdatedSubscription({
+ *   variables: {
+ *      chatId: // value for 'chatId'
+ *   },
+ * });
+ */
+export function useChatUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatUpdatedSubscription, ChatUpdatedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<ChatUpdatedSubscription, ChatUpdatedSubscriptionVariables>(ChatUpdatedDocument, options);
+}
+
+export type ChatUpdatedSubscriptionHookResult = ReturnType<typeof useChatUpdatedSubscription>;
+export type ChatUpdatedSubscriptionResult = Apollo.SubscriptionResult<ChatUpdatedSubscription>;
+export const ChatRemovedDocument = gql`
+    subscription ChatRemoved($chatId: ID!) {
+        chatRemoved(chatId: $chatId) {
+            id
+        }
+    }
+`;
 
 /**
  * __useChatRemovedSubscription__
@@ -1417,10 +1633,11 @@ ${ChatModelFragmentDoc}`;
  * @example
  * const { data, loading, error } = useChatRemovedSubscription({
  *   variables: {
+ *      chatId: // value for 'chatId'
  *   },
  * });
  */
-export function useChatRemovedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatRemovedSubscription, ChatRemovedSubscriptionVariables>) {
+export function useChatRemovedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatRemovedSubscription, ChatRemovedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
     return Apollo.useSubscription<ChatRemovedSubscription, ChatRemovedSubscriptionVariables>(ChatRemovedDocument, options);
 }
@@ -1428,12 +1645,12 @@ export function useChatRemovedSubscription(baseOptions?: Apollo.SubscriptionHook
 export type ChatRemovedSubscriptionHookResult = ReturnType<typeof useChatRemovedSubscription>;
 export type ChatRemovedSubscriptionResult = Apollo.SubscriptionResult<ChatRemovedSubscription>;
 export const ChatJoinedDocument = gql`
-    subscription ChatJoined {
-        chatJoined {
-            ...ChatUserModel
+    subscription ChatJoined($userId: ID!) {
+        chatJoined(userId: $userId) {
+            ...ChatModel
         }
     }
-${ChatUserModelFragmentDoc}`;
+${ChatModelFragmentDoc}`;
 
 /**
  * __useChatJoinedSubscription__
@@ -1447,53 +1664,24 @@ ${ChatUserModelFragmentDoc}`;
  * @example
  * const { data, loading, error } = useChatJoinedSubscription({
  *   variables: {
+ *      userId: // value for 'userId'
  *   },
  * });
  */
-export function useChatJoinedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatJoinedSubscription, ChatJoinedSubscriptionVariables>) {
+export function useChatJoinedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatJoinedSubscription, ChatJoinedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
     return Apollo.useSubscription<ChatJoinedSubscription, ChatJoinedSubscriptionVariables>(ChatJoinedDocument, options);
 }
 
 export type ChatJoinedSubscriptionHookResult = ReturnType<typeof useChatJoinedSubscription>;
 export type ChatJoinedSubscriptionResult = Apollo.SubscriptionResult<ChatJoinedSubscription>;
-export const ChatJoinedSelfDocument = gql`
-    subscription ChatJoinedSelf {
-        chatJoinedSelf {
-            ...ChatModel
-        }
-    }
-${ChatModelFragmentDoc}`;
-
-/**
- * __useChatJoinedSelfSubscription__
- *
- * To run a query within a React component, call `useChatJoinedSelfSubscription` and pass it any options that fit your needs.
- * When your component renders, `useChatJoinedSelfSubscription` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useChatJoinedSelfSubscription({
- *   variables: {
- *   },
- * });
- */
-export function useChatJoinedSelfSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatJoinedSelfSubscription, ChatJoinedSelfSubscriptionVariables>) {
-    const options = {...defaultOptions, ...baseOptions}
-    return Apollo.useSubscription<ChatJoinedSelfSubscription, ChatJoinedSelfSubscriptionVariables>(ChatJoinedSelfDocument, options);
-}
-
-export type ChatJoinedSelfSubscriptionHookResult = ReturnType<typeof useChatJoinedSelfSubscription>;
-export type ChatJoinedSelfSubscriptionResult = Apollo.SubscriptionResult<ChatJoinedSelfSubscription>;
 export const ChatLeavedDocument = gql`
-    subscription ChatLeaved {
-        chatLeaved {
-            ...ChatUserModel
+    subscription ChatLeaved($userId: ID!) {
+        chatLeaved(userId: $userId) {
+            id
         }
     }
-${ChatUserModelFragmentDoc}`;
+`;
 
 /**
  * __useChatLeavedSubscription__
@@ -1507,49 +1695,152 @@ ${ChatUserModelFragmentDoc}`;
  * @example
  * const { data, loading, error } = useChatLeavedSubscription({
  *   variables: {
+ *      userId: // value for 'userId'
  *   },
  * });
  */
-export function useChatLeavedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatLeavedSubscription, ChatLeavedSubscriptionVariables>) {
+export function useChatLeavedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatLeavedSubscription, ChatLeavedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
     return Apollo.useSubscription<ChatLeavedSubscription, ChatLeavedSubscriptionVariables>(ChatLeavedDocument, options);
 }
 
 export type ChatLeavedSubscriptionHookResult = ReturnType<typeof useChatLeavedSubscription>;
 export type ChatLeavedSubscriptionResult = Apollo.SubscriptionResult<ChatLeavedSubscription>;
-export const ChatLeavedSelfDocument = gql`
-    subscription ChatLeavedSelf {
-        chatLeavedSelf {
-            ...ChatModel
+export const ChatUserJoinedDocument = gql`
+    subscription ChatUserJoined($chatId: ID!) {
+        chatUserJoined(chatId: $chatId) {
+            ...ChatUserModel
         }
     }
-${ChatModelFragmentDoc}`;
+${ChatUserModelFragmentDoc}`;
 
 /**
- * __useChatLeavedSelfSubscription__
+ * __useChatUserJoinedSubscription__
  *
- * To run a query within a React component, call `useChatLeavedSelfSubscription` and pass it any options that fit your needs.
- * When your component renders, `useChatLeavedSelfSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useChatUserJoinedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useChatUserJoinedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useChatLeavedSelfSubscription({
+ * const { data, loading, error } = useChatUserJoinedSubscription({
  *   variables: {
+ *      chatId: // value for 'chatId'
  *   },
  * });
  */
-export function useChatLeavedSelfSubscription(baseOptions?: Apollo.SubscriptionHookOptions<ChatLeavedSelfSubscription, ChatLeavedSelfSubscriptionVariables>) {
+export function useChatUserJoinedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatUserJoinedSubscription, ChatUserJoinedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
-    return Apollo.useSubscription<ChatLeavedSelfSubscription, ChatLeavedSelfSubscriptionVariables>(ChatLeavedSelfDocument, options);
+    return Apollo.useSubscription<ChatUserJoinedSubscription, ChatUserJoinedSubscriptionVariables>(ChatUserJoinedDocument, options);
 }
 
-export type ChatLeavedSelfSubscriptionHookResult = ReturnType<typeof useChatLeavedSelfSubscription>;
-export type ChatLeavedSelfSubscriptionResult = Apollo.SubscriptionResult<ChatLeavedSelfSubscription>;
+export type ChatUserJoinedSubscriptionHookResult = ReturnType<typeof useChatUserJoinedSubscription>;
+export type ChatUserJoinedSubscriptionResult = Apollo.SubscriptionResult<ChatUserJoinedSubscription>;
+export const ChatUserLeavedDocument = gql`
+    subscription ChatUserLeaved($chatId: ID!) {
+        chatUserLeaved(chatId: $chatId) {
+            user {
+                id
+            }
+            chat {
+                id
+            }
+        }
+    }
+`;
+
+/**
+ * __useChatUserLeavedSubscription__
+ *
+ * To run a query within a React component, call `useChatUserLeavedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useChatUserLeavedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useChatUserLeavedSubscription({
+ *   variables: {
+ *      chatId: // value for 'chatId'
+ *   },
+ * });
+ */
+export function useChatUserLeavedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatUserLeavedSubscription, ChatUserLeavedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<ChatUserLeavedSubscription, ChatUserLeavedSubscriptionVariables>(ChatUserLeavedDocument, options);
+}
+
+export type ChatUserLeavedSubscriptionHookResult = ReturnType<typeof useChatUserLeavedSubscription>;
+export type ChatUserLeavedSubscriptionResult = Apollo.SubscriptionResult<ChatUserLeavedSubscription>;
+export const ChatUserUpdatedDocument = gql`
+    subscription ChatUserUpdated($chatId: ID!) {
+        chatUserUpdated(chatId: $chatId) {
+            ...ChatUserModel
+        }
+    }
+${ChatUserModelFragmentDoc}`;
+
+/**
+ * __useChatUserUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useChatUserUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useChatUserUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useChatUserUpdatedSubscription({
+ *   variables: {
+ *      chatId: // value for 'chatId'
+ *   },
+ * });
+ */
+export function useChatUserUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ChatUserUpdatedSubscription, ChatUserUpdatedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<ChatUserUpdatedSubscription, ChatUserUpdatedSubscriptionVariables>(ChatUserUpdatedDocument, options);
+}
+
+export type ChatUserUpdatedSubscriptionHookResult = ReturnType<typeof useChatUserUpdatedSubscription>;
+export type ChatUserUpdatedSubscriptionResult = Apollo.SubscriptionResult<ChatUserUpdatedSubscription>;
+export const LastSeenChangedDocument = gql`
+    subscription LastSeenChanged($userId: ID!) {
+        lastSeenChanged(userId: $userId) {
+            chat {
+                id
+            }
+            lastSeen
+        }
+    }
+`;
+
+/**
+ * __useLastSeenChangedSubscription__
+ *
+ * To run a query within a React component, call `useLastSeenChangedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useLastSeenChangedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLastSeenChangedSubscription({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *   },
+ * });
+ */
+export function useLastSeenChangedSubscription(baseOptions: Apollo.SubscriptionHookOptions<LastSeenChangedSubscription, LastSeenChangedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<LastSeenChangedSubscription, LastSeenChangedSubscriptionVariables>(LastSeenChangedDocument, options);
+}
+
+export type LastSeenChangedSubscriptionHookResult = ReturnType<typeof useLastSeenChangedSubscription>;
+export type LastSeenChangedSubscriptionResult = Apollo.SubscriptionResult<LastSeenChangedSubscription>;
 export const MessageAddedDocument = gql`
-    subscription MessageAdded {
-        messageAdded {
+    subscription MessageAdded($chatId: ID!) {
+        messageAdded(chatId: $chatId) {
             ...MessageModel
         }
     }
@@ -1567,13 +1858,79 @@ ${MessageModelFragmentDoc}`;
  * @example
  * const { data, loading, error } = useMessageAddedSubscription({
  *   variables: {
+ *      chatId: // value for 'chatId'
  *   },
  * });
  */
-export function useMessageAddedSubscription(baseOptions?: Apollo.SubscriptionHookOptions<MessageAddedSubscription, MessageAddedSubscriptionVariables>) {
+export function useMessageAddedSubscription(baseOptions: Apollo.SubscriptionHookOptions<MessageAddedSubscription, MessageAddedSubscriptionVariables>) {
     const options = {...defaultOptions, ...baseOptions}
     return Apollo.useSubscription<MessageAddedSubscription, MessageAddedSubscriptionVariables>(MessageAddedDocument, options);
 }
 
 export type MessageAddedSubscriptionHookResult = ReturnType<typeof useMessageAddedSubscription>;
 export type MessageAddedSubscriptionResult = Apollo.SubscriptionResult<MessageAddedSubscription>;
+export const MessageRemovedDocument = gql`
+    subscription MessageRemoved($chatId: ID!) {
+        messageRemoved(chatId: $chatId) {
+            id
+            chat {
+                id
+            }
+        }
+    }
+`;
+
+/**
+ * __useMessageRemovedSubscription__
+ *
+ * To run a query within a React component, call `useMessageRemovedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useMessageRemovedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMessageRemovedSubscription({
+ *   variables: {
+ *      chatId: // value for 'chatId'
+ *   },
+ * });
+ */
+export function useMessageRemovedSubscription(baseOptions: Apollo.SubscriptionHookOptions<MessageRemovedSubscription, MessageRemovedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<MessageRemovedSubscription, MessageRemovedSubscriptionVariables>(MessageRemovedDocument, options);
+}
+
+export type MessageRemovedSubscriptionHookResult = ReturnType<typeof useMessageRemovedSubscription>;
+export type MessageRemovedSubscriptionResult = Apollo.SubscriptionResult<MessageRemovedSubscription>;
+export const ProfileUpdatedDocument = gql`
+    subscription ProfileUpdated($userId: ID!) {
+        profileUpdated(userId: $userId) {
+            ...UserModel
+        }
+    }
+${UserModelFragmentDoc}`;
+
+/**
+ * __useProfileUpdatedSubscription__
+ *
+ * To run a query within a React component, call `useProfileUpdatedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useProfileUpdatedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProfileUpdatedSubscription({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *   },
+ * });
+ */
+export function useProfileUpdatedSubscription(baseOptions: Apollo.SubscriptionHookOptions<ProfileUpdatedSubscription, ProfileUpdatedSubscriptionVariables>) {
+    const options = {...defaultOptions, ...baseOptions}
+    return Apollo.useSubscription<ProfileUpdatedSubscription, ProfileUpdatedSubscriptionVariables>(ProfileUpdatedDocument, options);
+}
+
+export type ProfileUpdatedSubscriptionHookResult = ReturnType<typeof useProfileUpdatedSubscription>;
+export type ProfileUpdatedSubscriptionResult = Apollo.SubscriptionResult<ProfileUpdatedSubscription>;

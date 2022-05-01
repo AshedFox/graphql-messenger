@@ -18,59 +18,6 @@ query SearchChats($lastId: ID, $count: Int, $lastCreatedAt: Timestamp, $name: St
 
 query Chat($id: ID!) {
     chat(id: $id) {
-        id,
-        name,
-        access,
-        status,
-        createdAt,
-        updatedAt,
-        creator {
-            id
-        },
-        avatar {
-            url
-        },
-        messages {
-            id,
-            text,
-            createdAt,
-            updatedAt
-            sender {
-                id,
-                name,
-                avatar {
-                    url
-                },
-            },
-            replyTo {
-                id,
-                text,
-                createdAt,
-                updatedAt
-                sender {
-                    name,
-                    avatar {
-                        url
-                    },
-                },
-            },
-            attachments {
-                originalName,
-                createdAt,
-                url,
-                type
-            }
-        },
-        users {
-            status,
-            role,
-            user {
-                id,
-                name,
-                avatar {
-                    url
-                },
-            }
-        }
+        ...FullChatModel
     }
 }

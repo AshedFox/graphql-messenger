@@ -1,0 +1,5 @@
+subscription ProfileUpdated($userId: ID!) {
+    profileUpdated(userId: $userId) {
+        ...UserModel
+    }
+}

@@ -12,6 +12,9 @@ class UserStore {
     setMe = (user?: UserModel) => {
         this.me = user;
     }
+    reset = () => {
+        this.me = undefined;
+    }
 }
 
 export const userStore = new UserStore();

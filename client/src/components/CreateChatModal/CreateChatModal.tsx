@@ -1,12 +1,9 @@
 import React, {ChangeEvent, useState} from 'react';
-import Modal from "../shared/Modal";
-import Button from "../shared/Button";
 import styled from "styled-components";
-import Input from "../shared/Input";
 import {observer} from "mobx-react-lite";
 import {AddChatInput, useAddChatMutation, useSingleUploadMutation} from "../../data/generated/graphql";
 import {useCreateChatModalStore} from "../../stores/createChatModalStore";
-import AvatarInput from "../shared/AvatarInput";
+import {AvatarInput, Button, Input, Modal} from "../UI";
 
 
 const Content = styled.div`
@@ -52,10 +49,7 @@ const CreateChatModal = observer(() => {
         if (addChatResult.errors || !addChatResult.data) {
             setError("Не удалось создать чат!");
         } else {
-            setAddChatInput(initialAddChatInput);
-            resetFile();
             startClosing();
-            //addChat(addChatResult.data.addChat);
         }
     }
 
@@ -72,7 +66,7 @@ const CreateChatModal = observer(() => {
                     },
                 })
 
-                if (uploadResult.errors || !uploadResult.data) {
+                if (!uploadResult.data) {
                     setError("Не удалось загрузить файл!");
                 }
             } catch (e) {
@@ -82,19 +76,20 @@ const CreateChatModal = observer(() => {
     }
 
     return (
-        <Modal status={status} onStartClosing={startClosing} onEndClosing={endClosing} title={"Создание чата"}
+        <Modal status={status} startClosing={startClosing} endClosing={endClosing} title={"Создание чата"}
                footer={(
                    <Footer>
                        {error && <Error>{error}</Error>}
-                       <Button onClick={handleChatCreation} _stretch disabled={fileLoading}>Создать чат</Button>
+                       <Button onClick={handleChatCreation} _type={"secondary"} _stretch disabled={fileLoading}>Создать
+                           чат</Button>
                    </Footer>
                )}
         >
             <Content>
-                <AvatarInput fileUrl={fileData?.singleUpload.url} onFileChange={handleFileChange}
+                <AvatarInput fileSrc={fileData?.singleUpload.url} onFileChange={handleFileChange}
                              acceptType={"image/*"}/>
                 <Input name={"name"} value={addChatInput.name} placeholder={"Название"} onChange={handleChange}
-                       _stretch/>
+                       _stretch _type={"primary"}/>
             </Content>
         </Modal>
     );

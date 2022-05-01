@@ -1,12 +1,13 @@
 import React, {ReactNode} from 'react';
 import styled from "styled-components";
 
-const Wrapper = styled.div<{ selected?: boolean }>`
+const Container = styled.div<{ selected?: boolean }>`
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 10px 30px;
   gap: 10px;
+  user-select: none;
   
   cursor: pointer;
   
@@ -37,10 +38,10 @@ type Props = {
 
 const Function = ({text, icon, onClick}: Props) => {
     return (
-        <Wrapper onClick={onClick}>
+        <Container onClick={onClick}>
             <Icon>{icon}</Icon>
             <Text>{text}</Text>
-        </Wrapper>
+        </Container>
     );
 };
 

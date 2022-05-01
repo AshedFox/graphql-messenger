@@ -4,6 +4,10 @@ mutation JoinChat($chatId: ID!) {
     }
 }
 
+mutation ChangeLastSeen($chatId: ID!, $lastSeen: Timestamp!) {
+    changeLastSeen(chatId: $chatId, lastSeen: $lastSeen)
+}
+
 mutation LeaveChat($chatId: ID!) {
     leaveChat(chatId: $chatId)
 }

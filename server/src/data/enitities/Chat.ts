@@ -61,6 +61,9 @@ export class Chat extends BaseEntity {
     access!: ChatAccess;
 
     @Field({nullable: true})
+    lastSeen?: Date;
+
+    @Field({nullable: true})
     @Column({nullable: true})
     @IsUrl()
     inviteUrl?: string;

@@ -4,12 +4,6 @@ import App from './App';
 import {createGlobalStyle} from "styled-components";
 
 const Global = createGlobalStyle`
-  @font-face {
-    font-family: 'Montserrat', Arial, sans-serif;
-    font-weight: 500;
-    src: url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
-  }
-
   *,
   *::before,
   *::after {
@@ -23,6 +17,8 @@ const Global = createGlobalStyle`
     scroll-behavior: smooth;
     text-rendering: optimizeSpeed;
     line-height: 1.2;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 500;
   }
 
   ul[class],

@@ -5,13 +5,6 @@ fragment ChatUserModel on ChatUser {
         id
     },
     user {
-        id,
-        name,
-        createdAt,
-        updatedAt,
-        status,
-        avatar {
-            url
-        },
+        ...UserModel
     }
 }

@@ -1,30 +1,30 @@
 import {makeAutoObservable} from "mobx";
-import {SideBarStatus} from "../components/shared/SideBar";
 import {createContext, useContext} from "react";
+import {Status} from "../types/Status";
 
 export class FunctionsSideBarStore {
-    status: SideBarStatus = SideBarStatus.Closed;
+    status: Status = Status.Closed;
 
     constructor() {
         makeAutoObservable(this);
     }
 
     reset = () => {
-        this.status = SideBarStatus.Closed;
+        this.status = Status.Closed;
     }
     open = () => {
-        if (this.status === SideBarStatus.Closed) {
-            this.status = SideBarStatus.Open;
+        if (this.status === Status.Closed) {
+            this.status = Status.Open;
         }
     }
     startClosing = () => {
-        if (this.status === SideBarStatus.Open) {
-            this.status = SideBarStatus.Closing;
+        if (this.status === Status.Open) {
+            this.status = Status.Closing;
         }
     }
     endClosing = () => {
-        if (this.status === SideBarStatus.Closing) {
-            this.status = SideBarStatus.Closed;
+        if (this.status === Status.Closing) {
+            this.status = Status.Closed;
         }
     }
 }

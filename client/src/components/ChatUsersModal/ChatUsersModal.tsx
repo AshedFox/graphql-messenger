@@ -1,13 +1,13 @@
 import React from 'react';
-import Modal from "../shared/Modal";
+import Modal from "../UI/Modal";
 import {observer} from "mobx-react-lite";
 import {useChatUsersModalStore} from "../../stores/chatUsersModalStore";
 import styled from "styled-components";
-import {useChatsStore} from "../../stores/chatsStore";
-import Avatar from "../shared/Avatar";
+import Avatar from "../UI/Avatar";
 import {ChatUserRole} from "../../data/generated/graphql";
+import {ChatUserModel} from "../../types/models";
 
-const Content = styled.div`
+const List = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -51,27 +51,26 @@ const mapRole = (role: ChatUserRole) => {
     }
 }
 
-const ChatUsersModal = observer(() => {
-    const {status, startClosing, endClosing} = useChatUsersModalStore();
-    const {selectedChatId, chatsUsers} = useChatsStore();
+type Props = {
+    chatUsers: ChatUserModel[]
+}
 
-    if (!selectedChatId) {
-        return null;
-    }
+const ChatUsersModal = observer(({chatUsers}: Props) => {
+    const {status, startClosing, endClosing} = useChatUsersModalStore();
 
     return (
-        <Modal status={status} onStartClosing={startClosing} onEndClosing={endClosing} title={"Список участников чата"}>
-            <Content>
-                {chatsUsers.get(selectedChatId)?.map((chatUser) => {
+        <Modal status={status} startClosing={startClosing} endClosing={endClosing} title={"Список участников чата"}>
+            <List>
+                {chatUsers.map((chatUser) => {
                     return (
                         <Element key={chatUser.user.id}>
-                            <Avatar _size={"small"} src={chatUser.user.avatar?.url}/>
+                            <Avatar size={"small"} src={chatUser.user.avatar?.url}/>
                             <Name>{chatUser.user.name}</Name>
                             <Role>{mapRole(chatUser.role)}</Role>
                         </Element>
                     )
                 })}
-            </Content>
+            </List>
         </Modal>
     );
 });

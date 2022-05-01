@@ -1,23 +1,31 @@
-subscription ChatJoined {
-    chatJoined {
+subscription ChatUserJoined($chatId: ID!) {
+    chatUserJoined(chatId: $chatId) {
         ...ChatUserModel
     }
 }
 
-subscription ChatJoinedSelf {
-    chatJoinedSelf {
-        ...ChatModel
+subscription ChatUserLeaved($chatId: ID!) {
+    chatUserLeaved(chatId: $chatId) {
+        user {
+            id
+        },
+        chat {
+            id
+        }
     }
 }
 
-subscription ChatLeaved {
-    chatLeaved {
+subscription ChatUserUpdated($chatId: ID!) {
+    chatUserUpdated(chatId: $chatId) {
         ...ChatUserModel
     }
 }
 
-subscription ChatLeavedSelf {
-    chatLeavedSelf {
-        ...ChatModel
+subscription LastSeenChanged($userId: ID!) {
+    lastSeenChanged(userId: $userId) {
+        chat {
+            id
+        },
+        lastSeen
     }
 }

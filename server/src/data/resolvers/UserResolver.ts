@@ -1,4 +1,17 @@
-import {Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root, UseMiddleware} from "type-graphql";
+import {
+    Arg,
+    Ctx,
+    FieldResolver,
+    ID,
+    Mutation,
+    PubSub,
+    PubSubEngine,
+    Query,
+    Resolver,
+    Root,
+    Subscription,
+    UseMiddleware
+} from "type-graphql";
 import {User} from "../enitities/User";
 import {SignUpInput} from "../inputs/SignUpInput";
 import bcrypt from "bcrypt";
@@ -12,6 +25,9 @@ import {authMiddleware} from "../../middlewares/authMiddleware";
 import {File} from "../enitities/File";
 import {ForbiddenError} from "apollo-server-core";
 import {UserStatus} from "../enitities/UserStatus";
+import {UpdateProfileInput} from "../inputs/UpdateProfileInput";
+import {SubscriptionType} from "./SubscriptionType";
+import {ChatUser} from "../enitities/ChatUser";
 
 
 @Resolver(User)
@@ -60,7 +76,7 @@ export class UserResolver {
         const user = await User.findOneBy({email: loginInput.email});
 
         if (user && await bcrypt.compare(loginInput.password, user.password)) {
-            const accessToken = generateAccessToken(user.id);
+            const accessToken = generateAccessToken(user.id)
             const refreshToken = await RefreshToken.create({userId: user.id}).save();
             createTokensCookies(context.res, accessToken, refreshToken.id);
 
@@ -68,6 +84,38 @@ export class UserResolver {
         }
 
         throw new AuthenticationError("Login failed!");
+    }
+
+    @UseMiddleware(authMiddleware)
+    @Mutation(() => User, {nullable: true})
+    async updateProfile(@Arg("input") {name, avatarId}: UpdateProfileInput, @Ctx() context: MyContext,
+                        @PubSub() pubSub: PubSubEngine): Promise<User | null> {
+        const user = await User.findOneBy({id: context.req.userId});
+
+        if (!user) {
+            throw Error("User not found!");
+        }
+
+        if (name !== user.name || avatarId !== user.avatarId) {
+            if (name && name !== user.name) {
+                user.name = name;
+            }
+
+            if (avatarId !== user.avatarId) {
+                user.avatarId = avatarId;
+            }
+
+            await user.save();
+            await pubSub.publish(`${SubscriptionType.PROFILE_UPDATED}_${user.id}`, user);
+            const chatUsersByUser = await ChatUser.find({where: {userId: user.id}, withDeleted: true});
+            chatUsersByUser.forEach((chatUser) => {
+                pubSub.publish(`${SubscriptionType.CHAT_USER_UPDATED}_${chatUser.chatId}`, chatUser);
+            })
+
+            return user;
+        }
+
+        return null;
     }
 
     @UseMiddleware(authMiddleware)
@@ -125,5 +173,12 @@ export class UserResolver {
         }
 
         return false;
+    }
+
+    @Subscription(() => User, {
+        topics: (data) => `${SubscriptionType.PROFILE_UPDATED}_${data.args.userId}`,
+    })
+    async profileUpdated(@Root() user: User, @Arg("userId", () => ID) userId: string): Promise<User> {
+        return user;
     }
 }

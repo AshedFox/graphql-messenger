@@ -1,15 +1,16 @@
 import React, {useEffect} from 'react';
 import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
-import MainPage from "../MainPage/MainPage";
-import LoginPage from "../LoginPage/LoginPage";
-import SignUpPage from "../SignUpPage/SignUpPage";
 import {observer} from "mobx-react-lite";
 import {useMeLazyQuery} from "../../data/generated/graphql";
-import Loader from "../shared/Loader";
 import styled from "styled-components";
 import {useUserStore} from "../../stores/userStore";
+import MainPage from '../../pages/MainPage';
+import LoginPage from '../../pages/LoginPage';
+import SignUpPage from '../../pages/SignUpPage';
+import {Loader} from '../UI';
 
-const Wrapper = styled.div`
+
+const Container = styled.div`
   display: flex;
   width: 100vw;
   height: 100vh;
@@ -37,9 +38,9 @@ const AppRouter = observer(() => {
 
     if ((loading && called) || (!loading && !called)) {
         return (
-            <Wrapper>
+            <Container>
                 <Loader stretch={true} size={60}/>
-            </Wrapper>
+            </Container>
         )
     }
 
@@ -50,13 +51,13 @@ const AppRouter = observer(() => {
                     <Route path={"/"}>
                         <Route index element={<Navigate to={"main"}/>}/>
                         <Route path={"main"} element={<MainPage/>}/>
-                        <Route path={"*"} element={<Navigate to={"main"}/>}/>
+                        <Route path={"*"} element={<Navigate to={"main"} replace={true}/>}/>
                     </Route> :
                     <Route path={"/"}>
                         <Route index element={<Navigate to={"login"}/>}/>
                         <Route path={"login"} element={<LoginPage/>}/>
                         <Route path={"sign-up"} element={<SignUpPage/>}/>
-                        <Route path={"*"} element={<Navigate to={"login"}/>}/>
+                        <Route path={"*"} element={<Navigate to={"login"} replace={true}/>}/>
                     </Route>
                 }
             </Routes>

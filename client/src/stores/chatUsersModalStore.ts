@@ -1,27 +1,27 @@
 import {makeAutoObservable} from "mobx";
-import {ModalStatus} from "../components/shared/Modal";
 import {createContext, useContext} from "react";
+import {Status} from "../types/Status";
 
 class ChatUsersModalStore {
-    status: ModalStatus = ModalStatus.Closed;
+    status: Status = Status.Closed;
 
     constructor() {
         makeAutoObservable(this);
     }
 
     open = () => {
-        if (this.status === ModalStatus.Closed) {
-            this.status = ModalStatus.Open;
+        if (this.status === Status.Closed) {
+            this.status = Status.Open;
         }
     }
     startClosing = () => {
-        if (this.status === ModalStatus.Open) {
-            this.status = ModalStatus.Closing;
+        if (this.status === Status.Open) {
+            this.status = Status.Closing;
         }
     }
     endClosing = () => {
-        if (this.status === ModalStatus.Closing) {
-            this.status = ModalStatus.Closed;
+        if (this.status === Status.Closing) {
+            this.status = Status.Closed;
         }
     }
 }

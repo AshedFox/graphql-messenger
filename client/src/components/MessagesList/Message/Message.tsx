@@ -1,14 +1,16 @@
 import React from 'react';
 import styled from "styled-components";
-import Avatar from "../../shared/Avatar";
-import {MessageModel} from "../../../types/models";
+import {formatDatetime} from "../../../services/datetimeService";
+import {Avatar} from '../../UI';
+import {MessageProps} from "./types";
 
 
-const Wrapper = styled.div`
+const Container = styled.div`
   display: grid;
   grid-template-columns: 32px auto;
   align-items: flex-end;
   align-self: flex-start;
+  //overflow-x: hidden;
   gap: 10px;
 `
 
@@ -18,26 +20,28 @@ const Body = styled.div<{ self: boolean }>`
   padding: 8px 12px;
   gap: 5px;
   border-radius: 3px;
+  overflow: hidden;
   background-color: ${props => props.self ? props.theme.uiPrimaryHoverBg : props.theme.uiPrimaryBg};
 `
 
 const Header = styled.div`
   display: flex;
-  align-items: flex-end;
-
+  align-items: center;
   gap: 5px;
 `
 
-const Name = styled.div`
-  font-weight: 500;
+const Name = styled.span`
+  font-weight: 600;
   font-size: 14px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: ${props => props.theme.primaryText};
 `
 
-const Time = styled.div`
+const Time = styled.span`
   font-weight: 500;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
   color: ${props => props.theme.optionalText};
 `
@@ -45,27 +49,22 @@ const Time = styled.div`
 const Text = styled.div`
   font-size: 13px;
   font-weight: 500;
+  white-space: break-spaces;
+  word-wrap: break-word;
   color: ${props => props.theme.primaryText};
 `
 
-type Props = {
-    message: MessageModel,
-    isSelf?: boolean
-}
-
-const Message = ({message, isSelf}: Props) => {
-    return (
-        <Wrapper>
-            <Avatar _size={"small"} src={message.sender.avatar?.url} alt={"avatar"}/>
-            <Body self={isSelf ?? false}>
-                <Header>
-                    <Name>{message.sender.name}</Name>
-                    <Time>{new Date(message.createdAt).toLocaleTimeString()}</Time>
-                </Header>
-                <Text>{message.text}</Text>
-            </Body>
-        </Wrapper>
-    );
-};
+const Message = ({message, isSelf}: MessageProps) => (
+    <Container>
+        <Avatar size={"small"} src={message.sender.avatar?.url} alt={"avatar"}/>
+        <Body self={isSelf ?? false}>
+            <Header>
+                <Name>{message.sender.name}</Name>
+                <Time>{formatDatetime(message.createdAt)}</Time>
+            </Header>
+            <Text>{message.text}</Text>
+        </Body>
+    </Container>
+);
 
 export default Message;

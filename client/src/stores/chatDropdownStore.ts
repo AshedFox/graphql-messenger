@@ -1,18 +1,32 @@
 import {makeAutoObservable} from "mobx";
 import {createContext, useContext} from "react";
+import {Status} from "../types/Status";
 
 class ChatDropdownStore {
-    isOpen: boolean = false;
+    status: Status = Status.Closed;
 
     constructor() {
         makeAutoObservable(this);
     }
 
-    switchIsOpen = () => {
-        this.isOpen = !this.isOpen;
+    open = () => {
+        if (this.status === Status.Closed) {
+            this.status = Status.Open;
+        }
     }
-    setIsOpen = (isOpen: boolean) => {
-        this.isOpen = isOpen;
+    startClosing = () => {
+        if (this.status === Status.Open) {
+            this.status = Status.Closing;
+        }
+    }
+    endClosing = () => {
+        if (this.status === Status.Closing) {
+            this.status = Status.Closed;
+        }
+    }
+
+    reset = () => {
+        this.status = Status.Closed;
     }
 }
 

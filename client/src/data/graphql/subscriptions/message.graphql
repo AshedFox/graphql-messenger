@@ -1,5 +1,14 @@
-subscription MessageAdded {
-    messageAdded {
+subscription MessageAdded($chatId: ID!) {
+    messageAdded(chatId: $chatId) {
         ...MessageModel
+    }
+}
+
+subscription MessageRemoved($chatId: ID!) {
+    messageRemoved(chatId: $chatId) {
+        id,
+        chat {
+            id
+        }
     }
 }

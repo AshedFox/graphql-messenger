@@ -62,6 +62,10 @@ export class ChatUser extends BaseEntity {
     @DeleteDateColumn()
     deletedAt?: Date;
 
+    @Field({nullable: true})
+    @Column({nullable: true})
+    lastSeen?: Date;
+
     @AfterSoftRemove()
     async updateStatusOnSoftRemove() {
         this.status |= ChatUserStatus.LEAVED;

@@ -1,11 +1,29 @@
-subscription ChatAdded{
-    chatAdded {
+subscription ChatAdded($userId: ID!) {
+    chatAdded(userId: $userId) {
         ...ChatModel
     }
 }
 
-subscription ChatRemoved {
-    chatRemoved {
+subscription ChatUpdated($chatId: ID!) {
+    chatUpdated(chatId: $chatId) {
         ...ChatModel
+    }
+}
+
+subscription ChatRemoved($chatId: ID!) {
+    chatRemoved(chatId: $chatId) {
+        id
+    }
+}
+
+subscription ChatJoined($userId: ID!) {
+    chatJoined(userId: $userId) {
+        ...ChatModel
+    }
+}
+
+subscription ChatLeaved($userId: ID!) {
+    chatLeaved(userId: $userId) {
+        id
     }
 }

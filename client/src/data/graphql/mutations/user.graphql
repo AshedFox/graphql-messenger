@@ -10,6 +10,12 @@ mutation login($input: LoginInput!) {
     }
 }
 
+mutation updateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+        ...UserModel
+    }
+}
+
 mutation logout {
     logout
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import {ThemeProvider} from "styled-components";
 import {observer} from "mobx-react-lite";
-import AppRouter from "./components/AppRouter/AppRouter";
+import AppRouter from "./components/AppRouter";
 import {ApolloClient, ApolloProvider, InMemoryCache, split} from "@apollo/client";
 import {createUploadLink} from "apollo-upload-client";
 import {useThemeStore} from "./stores/themeStore";
@@ -33,7 +33,7 @@ const splitLink = split(
 
 const apolloClient = new ApolloClient({
     cache: new InMemoryCache(),
-    link: splitLink
+    link: splitLink,
 });
 
 

@@ -7,11 +7,10 @@ import {
     ID,
     Mutation,
     ObjectType,
-    Publisher,
     PubSub,
+    PubSubEngine,
     Query,
     Resolver,
-    ResolverFilterData,
     Root,
     Subscription,
     UseMiddleware
@@ -49,7 +48,7 @@ export class ChatResolver {
 
     @FieldResolver(() => [ChatUser])
     async users(@Root() chat: Chat): Promise<ChatUser[]> {
-        return await ChatUser.find({where: {chatId: chat.id}});
+        return await ChatUser.find({where: {chatId: chat.id}, take: 20, order: {createdAt: "ASC"}});
     }
 
     @FieldResolver(() => Message, {nullable: true})
@@ -59,12 +58,24 @@ export class ChatResolver {
 
     @FieldResolver(() => [Message])
     async messages(@Root() chat: Chat): Promise<Message[]> {
-        return await Message.find({where: {chatId: chat.id}, order: {createdAt: "DESC"}});
+        return await Message.find({
+            where: {chatId: chat.id},
+            order: {createdAt: "DESC"},
+            relations: ["attachments"],
+            take: 20
+        });
     }
 
     @FieldResolver(() => File, {nullable: true})
     async avatar(@Root() chat: Chat): Promise<File | null> {
         return chat.avatarId ? await File.findOneBy({id: chat.avatarId}) : null;
+    }
+
+    @FieldResolver({nullable: true})
+    async lastSeen(@Root() chat: Chat, @Ctx() context: MyContext): Promise<Date | null> {
+        const chatUser = await ChatUser.findOne({where: {chatId: chat.id, userId: context.req.userId}});
+        console.log(chatUser);
+        return chatUser?.lastSeen ?? null;
     }
 
     @UseMiddleware(authMiddleware)
@@ -139,17 +150,17 @@ export class ChatResolver {
     @UseMiddleware(authMiddleware)
     @Mutation(() => Chat)
     async addChat(@Arg("input") addChatInput: AddChatInput, @Ctx() context: MyContext,
-                  @PubSub(SubscriptionType.CHAT_ADDED) publish: Publisher<Chat>): Promise<Chat> {
+                  @PubSub() pubSub: PubSubEngine): Promise<Chat> {
         const chat = await Chat.create({...addChatInput, creatorId: context.req.userId}).save();
         await ChatUser.create({chatId: chat.id, userId: chat.creatorId, role: ChatUserRole.OWNER}).save();
-        await publish(chat);
+        await pubSub.publish(`${SubscriptionType.CHAT_ADDED}_${chat.creatorId}`, chat);
         return chat;
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Chat, {nullable: true})
     async recoverChat(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                      @PubSub(SubscriptionType.CHAT_RECOVERED) publish: Publisher<Chat>): Promise<Chat | null> {
+                      @PubSub() pubSub: PubSubEngine): Promise<Chat | null> {
         const chatToRecover = await Chat.findOne({where: {id}, withDeleted: true});
 
         if (chatToRecover && (chatToRecover.status & ChatStatus.DELETED)) {
@@ -159,7 +170,7 @@ export class ChatResolver {
 
             await chatToRecover.recover();
             const chat = await chatToRecover.save();
-            await publish(chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_RECOVERED}_${chat.id}`, chat);
             return chat;
         }
 
@@ -169,20 +180,20 @@ export class ChatResolver {
     @UseMiddleware(authMiddleware)
     @Mutation(() => Boolean)
     async removeChat(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                     @PubSub(SubscriptionType.CHAT_REMOVED) publish: Publisher<Chat>): Promise<boolean> {
-        const chatToDelete = await Chat.findOneBy({id});
+                     @PubSub() pubSub: PubSubEngine): Promise<boolean> {
+        const chat = await Chat.findOneBy({id});
 
-        if (chatToDelete) {
-            if (chatToDelete.creatorId !== context.req.userId) {
+        if (chat) {
+            if (chat.creatorId !== context.req.userId) {
                 throw new ForbiddenError("No access!");
             }
 
-            chatToDelete.users = await this.users(chatToDelete);
+            chat.users = await this.users(chat);
 
 
-            await chatToDelete.softRemove()
-            await chatToDelete.save();
-            await publish(chatToDelete);
+            await chat.softRemove()
+            await chat.save();
+            await pubSub.publish(`${SubscriptionType.CHAT_REMOVED}_${chat.id}`, chat);
             return true;
         }
 
@@ -190,26 +201,37 @@ export class ChatResolver {
     }
 
     @Subscription(() => Chat, {
-        topics: SubscriptionType.CHAT_ADDED,
-        filter: ({
-                     payload,
-                     context
-                 }: ResolverFilterData<Chat, {}, { userId: string }>) => context.userId === payload.creatorId
+        topics: (data) => `${SubscriptionType.CHAT_ADDED}_${data.args.userId}`,
     })
-    async chatAdded(@Root() chat: Chat): Promise<Chat> {
+    async chatAdded(@Root() chat: Chat, @Arg("userId", () => ID) userId: string): Promise<Chat> {
         return chat;
     }
 
+    @Subscription(() => Chat, {
+        topics: (data) => `${SubscriptionType.CHAT_UPDATED}_${data.args.chatId}`,
+    })
+    async chatUpdated(@Root() chat: Chat, @Arg("chatId", () => ID) chatId: string) {
+        return chat;
+    }
 
     @Subscription(() => Chat, {
-        topics: SubscriptionType.CHAT_REMOVED,
-        filter: async ({payload, context}: ResolverFilterData<Chat, {}, { userId: string }>) => {
-            const chatUsers: ChatUser[] = payload.users;
-
-            return chatUsers.find(el => el.userId === context.userId) !== null;
-        }
+        topics: (data) => `${SubscriptionType.CHAT_REMOVED}_${data.args.chatId}`
     })
-    async chatRemoved(@Root() chat: Chat): Promise<Chat> {
+    async chatRemoved(@Root() chat: Chat, @Arg("chatId", () => ID) chatId: string): Promise<Chat> {
+        return chat;
+    }
+
+    @Subscription(() => Chat, {
+        topics: (data) => `${SubscriptionType.CHAT_JOINED}_${data.args.userId}`,
+    })
+    async chatJoined(@Root() chat: Chat, @Arg("userId", () => ID) userId: string): Promise<Chat> {
+        return chat;
+    }
+
+    @Subscription(() => Chat, {
+        topics: (data) => `${SubscriptionType.CHAT_LEAVED}_${data.args.userId}`,
+    })
+    async chatLeaved(@Root() chat: Chat, @Arg("userId", () => ID) userId: string): Promise<Chat> {
         return chat;
     }
 }

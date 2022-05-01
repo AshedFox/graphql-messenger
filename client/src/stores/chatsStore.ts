@@ -1,26 +1,25 @@
 import {computed, makeAutoObservable} from "mobx";
 import {createContext, useContext} from "react";
-import {ChatModel, ChatUserModel, FullChatModel, MessageModel,} from "../types/models";
+import {ChatModel, ChatUserModel, FullChatModel, MessageModel} from "../types/models";
+import {userStore} from "./userStore";
 
 class ChatsStore {
-    chats: ChatModel[] = [];
-    chatsMessages: Map<string, MessageModel[]> = new Map<string, MessageModel[]>();
-    chatsUsers: Map<string, ChatUserModel[]> = new Map<string, ChatUserModel[]>();
     selectedChatId?: string;
+    loading: boolean = true;
+    error: boolean = false;
     isSearch: boolean = false;
+    searchText: string = "";
     searchChats: ChatModel[] = [];
+    private _chats: ChatModel[] = [];
+    private _fullChats: Map<string, FullChatModel> = new Map<string, FullChatModel>();
 
     constructor() {
-        makeAutoObservable(this, undefined, {
-            deep: true,
-            autoBind: true,
-            proxy: true
-        });
+        makeAutoObservable(this);
     }
 
     @computed
     get sortedChats(): ChatModel[] {
-        return this.chats.slice().sort((item1, item2) => {
+        return this._chats.slice().sort((item1, item2) => {
             if (item1.lastMessage && item2.lastMessage) {
                 return item2.lastMessage.createdAt - item1.lastMessage.createdAt || item2.createdAt - item1.createdAt;
             } else if (item1.lastMessage && !item2.lastMessage) {
@@ -30,59 +29,219 @@ class ChatsStore {
             }
 
             return item2.createdAt - item1.createdAt;
-        })
+        });
     }
 
     @computed
     get selectedChat(): FullChatModel | null {
-        if (this.selectedChatId) {
-            const messages = this.chatsMessages.get(this.selectedChatId);
-            const chatUsers = this.chatsUsers.get(this.selectedChatId);
-            let chat = this.chats.find(chat => chat.id === this.selectedChatId);
-
-            if (!chat) {
-                chat = this.searchChats?.find(chat => chat.id === this.selectedChatId);
-            }
-
-            if (chat && messages && chatUsers) {
-                return {
-                    ...chat,
-                    messages,
-                    chatUsers
-                }
-            }
-        }
-        return null;
+        return this._fullChats.get(this.selectedChatId ?? "") ?? null;
     }
+
+    @computed
+    get isParticipant(): boolean {
+        if (this.selectedChatId && userStore.me) {
+            return this.checkParticipant(this.selectedChatId, userStore.me.id);
+        }
+        return false;
+    }
+
+    reset = () => {
+        this._chats = [];
+        this._fullChats = new Map<string, FullChatModel>();
+        this.selectedChatId = undefined;
+        this.loading = true;
+        this.error = false;
+        this.isSearch = false;
+        this.searchText = "";
+        this.searchChats = [];
+    }
+
+    setLoading = (loading: boolean) => this.loading = loading;
+    setError = (error: boolean) => this.error = error;
 
     //chats
     setChats = (chats: ChatModel[]) => {
-        this.chatsMessages.clear();
-        this.chatsUsers.clear();
-        this.chats = chats;
-    }
-    addChats = (chats: ChatModel[]) => {
-        this.chats = [...chats, ...this.chats];
+        this._chats = chats;
     }
     addChat = (chat: ChatModel) => {
-        this.chatsMessages.delete(chat.id);
-        this.chatsUsers.delete(chat.id);
-        this.addChats([chat]);
+        this._chats = [...this._chats, chat];
     }
-    removeChat = (chatId: string) => {
-        this.chats = this.chats.filter(chat => chat.id !== chatId);
-        this.chatsMessages.delete(chatId);
-        this.chatsUsers.delete(chatId);
+    addFullChat = (fullChat: FullChatModel) => {
+        this._fullChats.set(fullChat.id, fullChat);
     }
-    defineChatNewLastMessage = (chatId: string) => {
-        if (this.chatsMessages.has(chatId)) {
-            const chatMessages = this.chatsMessages.get(chatId)!;
+    updateChat = (chat: ChatModel) => {
+        this._chats = this._chats.map(c => c.id === chat.id ? chat : c);
 
-            this.chats = this.chats.map(chat => {
+        const fullChat = this._fullChats.get(chat.id);
+        if (fullChat) {
+            this._fullChats.set(chat.id, {...fullChat, ...chat});
+        }
+    }
+    shouldRenewLastSeen = (chatId: string, newLastSeen: Date) => {
+        return this._chats.find(chat => chat.id === chatId)?.lastSeen < newLastSeen;
+        //return this._fullChats.get(chatId)?.lastSeen < newLastSeen;
+    }
+    updateChatLastSeen = (chatId: string, lastSeen: Date) => {
+        if (this.shouldRenewLastSeen(chatId, lastSeen)) {
+            this._chats = this._chats.map(chat => {
                 if (chat.id === chatId) {
-                    return {...chat, lastMessage: chatMessages.at(0)}
+                    chat.lastSeen = lastSeen;
                 }
                 return chat;
+            });
+
+            const fullChat = this._fullChats.get(chatId);
+
+            if (fullChat) {
+                this._fullChats.set(chatId, {...fullChat, lastSeen});
+            }
+        }
+    }
+    removeChat = (chatId: string) => {
+        this._chats = this._chats.filter(chat => chat.id !== chatId);
+        this._fullChats.delete(chatId);
+    }
+
+    //messages
+    addMessage = (message: MessageModel) => {
+        const fullChat = this._fullChats.get(message.chat.id);
+
+        if (fullChat) {
+            this._fullChats.set(message.chat.id, {
+                ...fullChat,
+                messages: [message, ...fullChat.messages],
+                lastMessage: message
+            });
+        }
+
+        this._chats = this._chats.map(chat => {
+            if (chat.id === message.chat.id) {
+                chat.lastMessage = message;
+            }
+            return chat;
+        });
+        this.searchChats = this.searchChats.map(chat => {
+            if (chat.id === message.chat.id) {
+                chat.lastMessage = message;
+            }
+            return chat;
+        });
+    }
+    addMessages = (chatId: string, messages: MessageModel[]) => {
+        const fullChat = this._fullChats.get(chatId);
+
+        if (fullChat) {
+            this._fullChats.set(chatId, {
+                ...fullChat,
+                messages: [...fullChat.messages, ...messages],
+            });
+        }
+    }
+    updateMessage = (message: MessageModel) => {
+        const fullChat = this._fullChats.get(message.chat.id);
+
+        if (fullChat) {
+            this._fullChats.set(message.chat.id, {
+                ...fullChat,
+                messages: fullChat.messages.map((msg: MessageModel) => msg.id === message.id ? message : msg),
+                lastMessage: message.id === fullChat.lastMessage?.id ? message : fullChat.lastMessage
+            });
+        }
+
+        this._chats = this._chats.map(chat => {
+            if (chat.id === message.chat.id) {
+                chat.lastMessage = message;
+            }
+            return chat;
+        });
+        this.searchChats = this.searchChats.map(chat => {
+            if (chat.id === message.chat.id) {
+                chat.lastMessage = message;
+            }
+            return chat;
+        });
+    }
+    removeMessage = (chatId: string, messageId: string) => {
+        const fullChat = this._fullChats.get(chatId);
+
+        if (fullChat) {
+            this._fullChats.set(chatId, {
+                ...fullChat,
+                messages: fullChat.messages.filter(message => message.id !== messageId),
+                lastMessage: messageId === fullChat.lastMessage?.id ? fullChat.messages.at(1) : fullChat.lastMessage
+            });
+        }
+
+        this._chats = this._chats.map(chat => {
+            if (chat.id === chatId) {
+                chat.lastMessage = messageId === chat.lastMessage?.id ? undefined : chat.lastMessage;
+            }
+            return chat;
+        });
+        this.searchChats = this.searchChats.map(chat => {
+            if (chat.id === chatId) {
+                chat.lastMessage = messageId === chat.lastMessage?.id ? undefined : chat.lastMessage;
+            }
+            return chat;
+        });
+    }
+
+    //addChatUser
+    addChatUser = (chatUser: ChatUserModel) => {
+        const fullChat = this._fullChats.get(chatUser.chat.id);
+
+        if (fullChat) {
+            this._fullChats.set(chatUser.chat.id, {
+                ...fullChat,
+                users: [...fullChat.users, chatUser]
+            });
+        }
+    }
+    addChatUsers = (chatId: string, chatUsers: ChatUserModel[]) => {
+        const fullChat = this._fullChats.get(chatId);
+
+        if (fullChat) {
+            this._fullChats.set(chatId, {
+                ...fullChat,
+                users: [...fullChat.users, ...chatUsers]
+            });
+        }
+    }
+    updateChatUser = (chatUser: ChatUserModel) => {
+        const fullChat = this._fullChats.get(chatUser.chat.id);
+
+        if (fullChat) {
+            this._fullChats.set(chatUser.chat.id, {
+                ...fullChat,
+                users: fullChat.users.map(cu => cu.user.id === chatUser.user.id ? chatUser : cu),
+                messages: fullChat.messages.map(msg => {
+                    if (msg.sender.id === chatUser.user.id) {
+                        msg.sender = chatUser.user;
+                    }
+                    return msg;
+                }),
+                lastMessage: chatUser.user.id === fullChat.lastMessage?.sender.id ?
+                    {...fullChat.lastMessage, sender: chatUser.user} :
+                    fullChat.lastMessage
+            });
+        }
+
+        this._chats = this._chats.map(chat => {
+            if (chat.id === chatUser.chat.id) {
+                chat.lastMessage = chatUser.user.id === chat.lastMessage?.sender.id ?
+                    {...chat.lastMessage, sender: chatUser.user} :
+                    chat.lastMessage;
+            }
+            return chat;
+        });
+    }
+    removeChatUser = (chatId: string, chatUserId: string) => {
+        const fullChat = this._fullChats.get(chatId);
+
+        if (fullChat) {
+            this._fullChats.set(chatId, {
+                ...fullChat,
+                users: fullChat.users.filter(cu => cu.user.id !== chatUserId),
             });
         }
     }
@@ -91,65 +250,43 @@ class ChatsStore {
     setIsSearch = (isSearch: boolean) => {
         this.isSearch = isSearch;
     }
+    setSearchText = (text: string) => {
+        this.searchText = text;
+    }
     setSearchChats = (chats: ChatModel[]) => {
         this.searchChats = chats;
+    }
+    removeSearchChat = (chatId: string) => {
+        this.searchChats = this.searchChats.filter(chat => chat.id !== chatId);
+    }
+    resetSearch = () => {
+        this.searchText = "";
+        this.isSearch = false;
     }
 
     //selected chat
     setSelectedChatId = (id?: string) => {
         this.selectedChatId = id;
     }
-
-    //chats messages
-    setChatMessages = (chatId: string, messages: MessageModel[]) => {
-        this.chatsMessages.set(chatId, messages);
-        this.defineChatNewLastMessage(chatId);
-    }
-    addChatMessages = (chatId: string, messages: MessageModel[], place: "start" | "end") => {
-        if (this.chatsMessages.has(chatId)) {
-            const oldMessages = this.chatsMessages.get(chatId)!;
-
-            this.chatsMessages.set(chatId, place === "start" ? [...messages, ...oldMessages] : [...oldMessages, ...messages]);
-        } else {
-            this.setChatMessages(chatId, messages);
+    selectIfNoSelected = (id: string) => {
+        if (!this.selectedChatId) {
+            this.setSelectedChatId(id);
         }
-        this.defineChatNewLastMessage(chatId);
     }
-    addChatMessage = (message: MessageModel) => {
-        this.addChatMessages(message.chat.id, [message], "start");
-    }
-    removeChatMessage = (chatId: string, messageId: string) => {
-        if (this.chatsMessages.has(chatId)) {
-            const messages = this.chatsMessages.get(chatId)!;
-            this.chatsMessages.set(chatId, messages.filter(message => message.id !== messageId));
+    unselectIfSelected = (id: string) => {
+        if (id === this.selectedChatId) {
+            this.setSelectedChatId(undefined);
         }
     }
 
-    //chats users
-    setChatUsers = (chatId: string, chatUsers: ChatUserModel[]) => {
-        this.chatsUsers.set(chatId, chatUsers);
-    }
-    addChatUsers = (chatId: string, chatUsers: ChatUserModel[], place: "start" | "end") => {
-        if (this.chatsUsers.has(chatId)) {
-            const oldChatUsers = this.chatsUsers.get(chatId)!;
+    checkParticipant = (chatId: string, userId: string): boolean => {
+        const chat = this._fullChats.get(chatId);
 
-            this.chatsUsers.set(chatId, place === "start" ? [...chatUsers, ...oldChatUsers] : [...oldChatUsers, ...chatUsers]);
-        } else {
-            this.setChatUsers(chatId, chatUsers);
+        if (chat) {
+            return chat.users.some(chatUser => chatUser.user.id === userId);
         }
-    }
-    addChatUser = (chatUser: ChatUserModel) => {
-        this.addChatUsers(chatUser.chat.id, [chatUser], "start");
-    }
-    removeChatUser = (chatId: string, userId: string) => {
-        if (this.chatsUsers.has(chatId)) {
-            const chatUsers = this.chatsUsers.get(chatId)!;
-            this.chatsUsers.set(chatId, chatUsers.filter(chatUser => chatUser.user.id !== userId));
-        }
-    }
-    isParticipant = (chatId: string): boolean => {
-        return !!this.chats.find(chat => chat.id === chatId);
-        //return !!this.chatsUsers.get(chatId)?.find(chatUser => chatUser.user.id === userId);
+
+        return false;
     }
 }
 
