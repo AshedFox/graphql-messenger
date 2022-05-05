@@ -20,7 +20,7 @@ import {AddChatInput} from "../inputs/AddChatInput";
 import {authMiddleware} from "../../middlewares/authMiddleware";
 import {ChatUser} from "../enitities/ChatUser";
 import {MyContext} from "../../types/MyContext";
-import {ForbiddenError} from "apollo-server-core";
+import {HttpQueryError} from "apollo-server-core";
 import {SubscriptionType} from "./SubscriptionType";
 import {User} from "../enitities/User";
 import {Message} from "../enitities/Message";
@@ -29,6 +29,8 @@ import {ChatStatus} from "../enitities/ChatStatus";
 import {ChatsArgs} from "../args/ChatsArgs";
 import {SearchChatsArgs} from "../args/SearchChatsArgs";
 import {ChatUserRole} from "../enitities/ChatUserRole";
+import {ChatInvite} from "../enitities/ChatInvite";
+import {MoreThan} from "typeorm";
 
 @ObjectType()
 export class ChatsResult {
@@ -48,7 +50,7 @@ export class ChatResolver {
 
     @FieldResolver(() => [ChatUser])
     async users(@Root() chat: Chat): Promise<ChatUser[]> {
-        return await ChatUser.find({where: {chatId: chat.id}, take: 20, order: {createdAt: "ASC"}});
+        return ChatUser.find({where: {chatId: chat.id}, order: {createdAt: "ASC"}});
     }
 
     @FieldResolver(() => Message, {nullable: true})
@@ -61,8 +63,15 @@ export class ChatResolver {
         return await Message.find({
             where: {chatId: chat.id},
             order: {createdAt: "DESC"},
-            relations: ["attachments"],
             take: 20
+        });
+    }
+
+    @FieldResolver(() => [ChatInvite])
+    async invites(@Root() chat: Chat): Promise<ChatInvite[]> {
+        return await ChatInvite.find({
+            where: {chatId: chat.id, expiredAt: MoreThan(new Date()), leftUses: MoreThan(0)},
+            order: {expiredAt: "DESC"}
         });
     }
 
@@ -73,9 +82,16 @@ export class ChatResolver {
 
     @FieldResolver({nullable: true})
     async lastSeen(@Root() chat: Chat, @Ctx() context: MyContext): Promise<Date | null> {
-        const chatUser = await ChatUser.findOne({where: {chatId: chat.id, userId: context.req.userId}});
-        console.log(chatUser);
-        return chatUser?.lastSeen ?? null;
+        try {
+            const chatUser = await ChatUser.findOneBy({chatId: chat.id, userId: context.req.userId});
+
+            if (chatUser && chatUser.lastSeen) {
+                return chatUser.lastSeen;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
     }
 
     @UseMiddleware(authMiddleware)
@@ -142,62 +158,77 @@ export class ChatResolver {
     }
 
     @UseMiddleware(authMiddleware)
-    @Query(() => Chat, {nullable: true})
-    async chat(@Arg("id", () => ID) id: string): Promise<Chat | null> {
-        return await Chat.findOneBy({id: id});
+    @Query(() => Chat)
+    async chat(@Arg("id", () => ID) id: string): Promise<Chat> {
+        const chat = await Chat.findOneBy({id: id});
+
+        if (!chat) {
+            throw new HttpQueryError(404, "Chat not found");
+        }
+
+        return chat;
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Chat)
     async addChat(@Arg("input") addChatInput: AddChatInput, @Ctx() context: MyContext,
-                  @PubSub() pubSub: PubSubEngine): Promise<Chat> {
+                  @PubSub() pubSub: PubSubEngine): Promise<Chat>
+    {
         const chat = await Chat.create({...addChatInput, creatorId: context.req.userId}).save();
-        await ChatUser.create({chatId: chat.id, userId: chat.creatorId, role: ChatUserRole.OWNER}).save();
-        await pubSub.publish(`${SubscriptionType.CHAT_ADDED}_${chat.creatorId}`, chat);
+        await ChatUser.create({chatId: chat.id, userId: context.req.userId, role: ChatUserRole.OWNER}).save();
+        await pubSub.publish(`${SubscriptionType.CHAT_ADDED}_${context.req.userId}`, chat);
         return chat;
     }
 
     @UseMiddleware(authMiddleware)
-    @Mutation(() => Chat, {nullable: true})
+    @Mutation(() => Chat)
     async recoverChat(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                      @PubSub() pubSub: PubSubEngine): Promise<Chat | null> {
-        const chatToRecover = await Chat.findOne({where: {id}, withDeleted: true});
+                      @PubSub() pubSub: PubSubEngine): Promise<Chat> {
+        const chat = await Chat.findOne({where: {id}, withDeleted: true});
 
-        if (chatToRecover && (chatToRecover.status & ChatStatus.DELETED)) {
-            if (chatToRecover.creatorId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            await chatToRecover.recover();
-            const chat = await chatToRecover.save();
-            await pubSub.publish(`${SubscriptionType.CHAT_RECOVERED}_${chat.id}`, chat);
-            return chat;
+        if (!chat) {
+            throw new HttpQueryError(404, "Chat not found");
         }
 
-        return null;
+        if (chat.creatorId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (!(chat.status & ChatStatus.DELETED)) {
+            throw new HttpQueryError(409, "Chat not deleted!");
+        }
+
+        await chat.recover();
+        await chat.save();
+        await pubSub.publish(`${SubscriptionType.CHAT_RECOVERED}_${chat.id}`, chat);
+        return chat;
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Boolean)
     async removeChat(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
-                     @PubSub() pubSub: PubSubEngine): Promise<boolean> {
-        const chat = await Chat.findOneBy({id});
+                     @PubSub() pubSub: PubSubEngine): Promise<boolean>
+    {
+        const chat = await Chat.findOne({where: {id}, withDeleted: true});
 
-        if (chat) {
-            if (chat.creatorId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            chat.users = await this.users(chat);
-
-
-            await chat.softRemove()
-            await chat.save();
-            await pubSub.publish(`${SubscriptionType.CHAT_REMOVED}_${chat.id}`, chat);
-            return true;
+        if (!chat) {
+            throw new HttpQueryError(404, "Chat not found");
         }
 
-        return false;
+        if (chat.creatorId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (chat.status & ChatStatus.DELETED) {
+            throw new HttpQueryError(409, "Chat already deleted");
+        }
+
+        chat.users = await this.users(chat);
+
+        await chat.softRemove()
+        await chat.save();
+        await pubSub.publish(`${SubscriptionType.CHAT_REMOVED}_${chat.id}`, chat);
+        return true;
     }
 
     @Subscription(() => Chat, {

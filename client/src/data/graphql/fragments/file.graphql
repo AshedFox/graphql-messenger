@@ -1,0 +1,8 @@
+fragment FileModel on File {
+    id,
+    url,
+    size,
+    type,
+    originalName,
+    createdAt
+}

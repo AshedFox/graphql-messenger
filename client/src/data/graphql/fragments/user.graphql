@@ -6,7 +6,6 @@ fragment UserModel on User {
     updatedAt,
     status,
     avatar {
-        id,
-        url
+        ...FileModel
     }
 }

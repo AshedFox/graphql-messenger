@@ -1,0 +1,3 @@
+query CheckInvite($token: String!) {
+    checkInvite(token: $token)
+}

@@ -68,6 +68,7 @@ const Content = styled.div<{ status: Status }>`
   flex-direction: column;
   margin: auto;
   min-width: 320px;
+  max-width: 70%;
   max-height: 70%;
   background-color: ${props => props.theme.primaryBg};
   border-radius: 4px;

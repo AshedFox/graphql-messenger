@@ -6,10 +6,11 @@ import styled from "styled-components";
 import {Button, Loader} from '../UI';
 
 
-const RefreshButtonContainer = styled.div`
+const Container = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 3px;
 `
 
 type Props = {
@@ -49,14 +50,18 @@ const Main = observer(({load, search}: Props) => {
     }, []);
 
     if (loading) {
-        return <Loader stretch size={30}/>
+        return (
+            <Container>
+                <Loader stretch size={30}/>
+            </Container>
+        )
     }
 
     if (error) {
         return (
-            <RefreshButtonContainer>
+            <Container>
                 <Button _size={"medium"} _type={"secondary"} onClick={tryReload}>Попробовать снова</Button>
-            </RefreshButtonContainer>
+            </Container>
         )
     }
 

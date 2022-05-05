@@ -1,0 +1,17 @@
+subscription ChatInviteAdded($chatId: ID!) {
+    chatInviteAdded(chatId: $chatId) {
+        ...ChatInviteModel
+    }
+}
+
+subscription ChatInviteUpdated($chatId: ID!) {
+    chatInviteUpdated(chatId: $chatId) {
+        ...ChatInviteModel
+    }
+}
+
+subscription ChatInviteRemoved($chatId: ID!) {
+    chatInviteRemoved(chatId: $chatId) {
+        ...ChatInviteModel
+    }
+}

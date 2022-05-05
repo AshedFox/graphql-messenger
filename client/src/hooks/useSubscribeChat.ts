@@ -1,4 +1,7 @@
 import {
+    useChatInviteAddedSubscription,
+    useChatInviteRemovedSubscription,
+    useChatInviteUpdatedSubscription,
     useChatRemovedSubscription,
     useChatUpdatedSubscription,
     useChatUserJoinedSubscription,
@@ -13,7 +16,7 @@ import {useChatsStore} from "../stores/chatsStore";
 const useSubscribeChat = (chatId: string) => {
     const {
         updateChat, removeChat, addChatUser, removeChatUser, updateChatUser, addMessage, removeMessage,
-        unselectIfSelected, removeSearchChat
+        unselectIfSelected, removeSearchChat, addChatInvite, updateChatInvite, removeChatInvite
     } = useChatsStore();
 
     useChatUpdatedSubscription({
@@ -100,6 +103,39 @@ const useSubscribeChat = (chatId: string) => {
                 const chatId = subscriptionData.data.messageRemoved.chat.id;
 
                 removeMessage(chatId, id);
+            }
+        }
+    });
+    useChatInviteAddedSubscription({
+        shouldResubscribe: true,
+        variables: {
+            chatId
+        },
+        onSubscriptionData: ({subscriptionData}) => {
+            if (subscriptionData.data) {
+                addChatInvite(subscriptionData.data.chatInviteAdded);
+            }
+        }
+    });
+    useChatInviteUpdatedSubscription({
+        shouldResubscribe: true,
+        variables: {
+            chatId
+        },
+        onSubscriptionData: ({subscriptionData}) => {
+            if (subscriptionData.data) {
+                updateChatInvite(subscriptionData.data.chatInviteUpdated);
+            }
+        }
+    });
+    useChatInviteRemovedSubscription({
+        shouldResubscribe: true,
+        variables: {
+            chatId
+        },
+        onSubscriptionData: ({subscriptionData}) => {
+            if (subscriptionData.data) {
+                removeChatInvite(subscriptionData.data.chatInviteRemoved);
             }
         }
     });

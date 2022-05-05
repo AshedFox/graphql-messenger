@@ -18,8 +18,7 @@ fragment ChatModel on Chat {
         }
     },
     avatar {
-        id,
-        url
+        ...FileModel
     },
 }
 
@@ -31,4 +30,7 @@ fragment FullChatModel on Chat {
     users {
         ...ChatUserModel
     },
+    invites {
+        ...ChatInviteModel
+    }
 }

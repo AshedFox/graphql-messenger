@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from "styled-components";
 import Function from "./Function";
-import {AiOutlineDelete, AiOutlineUserAdd} from "react-icons/ai";
+import {AiOutlineUserAdd} from "react-icons/ai";
 import {BiLogOut, BiMoon} from "react-icons/bi";
 import {useNavigate} from "react-router-dom";
 import {useLogoutMutation} from "../../../data/generated/graphql";
@@ -43,17 +43,15 @@ const FunctionsList = () => {
     }
 
     const handleLogout = async () => {
-        const logoutResult = await logout();
+        try {
+            const logoutResult = await logout();
 
-        if (logoutResult.data?.logout) {
-            reset();
-            navigate("/");
-        }
-    }
-
-    const handleAccountDeletion = () => {
-        if (window.confirm("Вы действительно хотите удалить аккаунт?")) {
-            // delete account
+            if (logoutResult.data?.logout) {
+                reset();
+                navigate("/");
+            }
+        } catch {
+            window.alert("Не удалось выйти!");
         }
     }
 
@@ -63,7 +61,7 @@ const FunctionsList = () => {
                 <Function icon={<AiOutlineUserAdd size={24}/>} text={"Создать чат"} onClick={open}/>
                 <Function icon={<BiMoon size={24}/>} text={"Сменить тему"} onClick={handleThemeSwitch}/>
                 <Function icon={<BiLogOut size={24}/>} text={"Выйти из аккаунта"} onClick={handleLogout}/>
-                <Function icon={<AiOutlineDelete size={24}/>} text={"Удалить аккаунт"} onClick={handleAccountDeletion}/>
+                {/*<Function icon={<AiOutlineDelete size={24}/>} text={"Удалить аккаунт"} onClick={handleAccountDeletion}/>*/}
             </List>
         </Container>
     );

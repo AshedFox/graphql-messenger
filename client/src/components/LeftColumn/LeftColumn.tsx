@@ -15,7 +15,7 @@ const Container = styled.div`
 const LeftColumn = () => {
     const {
         setChats, setSearchChats,
-        setIsSearch, resetSearch
+        setIsSearch, resetSearch,
     } = useChatsStore();
     const [chatsQuery] = useChatsLazyQuery();
     const [searchChatsQuery] = useSearchChatsLazyQuery();
@@ -30,7 +30,7 @@ const LeftColumn = () => {
         if (result.data) {
             setChats(result.data.chats.chats);
         } else {
-            throw new Error("");
+            throw new Error();
         }
     }
 

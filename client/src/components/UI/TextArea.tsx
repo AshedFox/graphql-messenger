@@ -58,28 +58,21 @@ export default styled.textarea<Props>`
     color: ${props => props.theme.optionalText}
   }
 
-  /* width */
 
   ::-webkit-scrollbar {
     width: 10px;
   }
-
-  /* Track */
-
+  
   ::-webkit-scrollbar-track {
     background: transparent;
     margin: 2px;
   }
 
-  /* Handle */
-
   ::-webkit-scrollbar-thumb {
     background: ${props => `${props.theme.secondaryBg}81`};
     border-radius: 4px;
   }
-
-  /* Handle on hover */
-
+  
   ::-webkit-scrollbar-thumb:hover {
     background: ${props => `${props.theme.uiSecondaryHoverBg}81`};
   }

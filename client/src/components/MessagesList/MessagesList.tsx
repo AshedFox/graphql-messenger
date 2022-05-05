@@ -25,27 +25,19 @@ const List = styled.div`
   max-height: 100%;
   padding: 16px 54px;
 
-  /* width */
-
   ::-webkit-scrollbar {
     width: 10px;
   }
-
-  /* Track */
 
   ::-webkit-scrollbar-track {
     background: transparent;
     margin: 4px;
   }
 
-  /* Handle */
-
   ::-webkit-scrollbar-thumb {
     background: ${props => `${props.theme.secondaryBg}81`};
     border-radius: 4px;
   }
-
-  /* Handle on hover */
 
   ::-webkit-scrollbar-thumb:hover {
     background: ${props => `${props.theme.uiSecondaryHoverBg}81`};
@@ -94,7 +86,7 @@ const MessagesList: FC<Props> = ({
             if (e[0].isIntersecting) {
                 loadMore?.();
             }
-        }, {rootMargin: "20px", threshold: 0.5});
+        }, {rootMargin: "20px", threshold: 0});
 
         const startCurrent = start.current;
 
@@ -109,10 +101,11 @@ const MessagesList: FC<Props> = ({
     useLayoutEffect(() => {
         if (prevLastId !== messages.at(-1)?.id) {
             if (listRef.current) {
-                listRef.current?.scrollBy(0, lastScrollPosition ?
-                    listRef.current.scrollHeight - lastScrollPosition :
-                    listRef.current.scrollHeight
-                );
+                listRef.current?.scrollBy({
+                    left: 0,
+                    top: lastScrollPosition ? listRef.current.scrollHeight - lastScrollPosition : listRef.current.scrollHeight,
+                    behavior: "auto"
+                });
             }
         }
     }, [messages]);

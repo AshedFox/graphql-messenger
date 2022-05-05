@@ -13,4 +13,7 @@ export class AddMessageInput implements Partial<Message> {
 
     @Field(() => ID)
     chatId!: string;
+
+    @Field(() => [String])
+    attachmentsIds!: string[];
 }

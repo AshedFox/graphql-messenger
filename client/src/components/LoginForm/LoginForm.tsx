@@ -30,18 +30,24 @@ const LoginForm = () => {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
-        const loginResult = await login({
-            variables: {
-                input: {
-                    ...loginInput,
-                    password: SHA512(loginInput.password).toString()
+        try {
+            const loginResult = await login({
+                variables: {
+                    input: {
+                        email: loginInput.email.trim(),
+                        password: SHA512(loginInput.password.trim()).toString()
+                    }
                 }
-            }
-        });
+            });
 
-        if (!loginResult.errors && loginResult.data?.login) {
-            setMe(loginResult.data.login);
-            navigate("/");
+            if (loginResult.data) {
+                setMe(loginResult.data.login);
+                navigate("/");
+            } else {
+                window.alert("Не удалось войти в аккаунт!");
+            }
+        } catch {
+            window.alert("Не удалось войти в аккаунт!");
         }
     }
 

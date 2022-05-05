@@ -32,18 +32,25 @@ const SignUpForm = () => {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
-        const signUpResult = await signUp({
-            variables: {
-                input: {
-                    ...signUpInput,
-                    password: SHA512(signUpInput.password).toString()
+        try {
+            const signUpResult = await signUp({
+                variables: {
+                    input: {
+                        name: signUpInput.name.trim(),
+                        email: signUpInput.email.trim(),
+                        password: SHA512(signUpInput.password.trim()).toString()
+                    }
                 }
-            }
-        });
+            });
 
-        if (!signUpResult.errors && signUpResult.data?.signUp) {
-            setMe(signUpResult.data.signUp);
-            navigate("/");
+            if (signUpResult.data) {
+                setMe(signUpResult.data.signUp);
+                navigate("/");
+            } else {
+                window.alert("Не удалось зарегистрироваться!")
+            }
+        } catch {
+            window.alert("Не удалось зарегистрироваться!")
         }
     }
 

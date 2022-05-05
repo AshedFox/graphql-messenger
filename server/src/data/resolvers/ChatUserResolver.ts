@@ -21,7 +21,7 @@ import {MyContext} from "../../types/MyContext";
 import {Chat} from "../enitities/Chat";
 import {User} from "../enitities/User";
 import {ChatUserStatus} from "../enitities/ChatUserStatus";
-import {ForbiddenError} from "apollo-server-core";
+import {HttpQueryError} from "apollo-server-core";
 import {SubscriptionType} from "./SubscriptionType";
 import {ChatUsersArgs} from "../args/ChatUsersArgs";
 
@@ -91,13 +91,13 @@ export class ChatUserResolver {
     }
 
     @UseMiddleware(authMiddleware)
-    @Mutation(() => ChatUser, {nullable: true})
+    @Mutation(() => ChatUser)
     async joinChat(@Arg("chatId", () => ID) chatId: string, @Ctx() context: MyContext,
-                   @PubSub() pubSub: PubSubEngine): Promise<ChatUser | null> {
-        const chat = await Chat.findOneBy({id: chatId})
+                   @PubSub() pubSub: PubSubEngine): Promise<ChatUser> {
+        const chat = await Chat.findOneBy({id: chatId});
 
         if (!chat) {
-            throw new Error("Chat with passed id not found!");
+            throw new HttpQueryError(404, "Chat not found");
         }
 
         const chatUser = await ChatUser.findOne({
@@ -106,27 +106,31 @@ export class ChatUserResolver {
         });
 
         if (!chatUser) {
-            const chatUser = await ChatUser.create({chatId: chatId, userId: context.req.userId}).save();
+            const chatUser = await ChatUser.create({chatId: chatId, userId: context.req.userId, lastSeen: new Date()});
+            await chatUser.save();
 
-            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
             await pubSub.publish(`${SubscriptionType.CHAT_JOINED}_${chatUser.userId}`, chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
 
             return chatUser;
-        } else if (chatUser.status & ChatUserStatus.LEAVED) {
+        } else {
             if (chatUser.userId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
+                throw new HttpQueryError(403, "Forbidden");
+            }
+
+            if (!(chatUser.status & ChatUserStatus.LEAVED)) {
+                throw new HttpQueryError(409, "User already joined")
             }
 
             await chatUser.recover();
+            chatUser.lastSeen = new Date();
             await chatUser.save();
 
-            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
             await pubSub.publish(`${SubscriptionType.CHAT_JOINED}_${chatUser.userId}`, chat);
+            await pubSub.publish(`${SubscriptionType.CHAT_USER_JOINED}_${chatUser.chatId}`, chatUser);
 
             return chatUser;
         }
-
-        return null;
     }
 
     @UseMiddleware(authMiddleware)
@@ -136,26 +140,33 @@ export class ChatUserResolver {
         const chat = await Chat.findOneBy({id: chatId})
 
         if (!chat) {
-            throw new Error("Chat with passed id not found!");
+            throw new HttpQueryError(404, "Chat not found");
         }
 
-        const chatUser = await ChatUser.findOneBy({chatId: chatId, userId: context.req.userId});
+        const chatUser = await ChatUser.findOne({
+            where: {chatId: chatId, userId: context.req.userId},
+            withDeleted: true
+        });
 
-        if (chatUser) {
-            if (chatUser.userId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            await chatUser.softRemove();
-            await chatUser.save();
-
-            await pubSub.publish(`${SubscriptionType.CHAT_USER_LEAVED}_${chatUser.chatId}`, chatUser);
-            await pubSub.publish(`${SubscriptionType.CHAT_LEAVED}_${chatUser.userId}`, chat);
-
-            return true;
+        if (!chatUser) {
+            throw new HttpQueryError(404, "Chat user not found");
         }
 
-        return false;
+        if (chatUser.userId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (chatUser.status & ChatUserStatus.LEAVED) {
+            throw new HttpQueryError(409, "User already leaved")
+        }
+
+        await chatUser.softRemove();
+        await chatUser.save();
+
+        await pubSub.publish(`${SubscriptionType.CHAT_USER_LEAVED}_${chatUser.chatId}`, chatUser);
+        await pubSub.publish(`${SubscriptionType.CHAT_LEAVED}_${chatUser.userId}`, chat);
+
+        return true;
     }
 
     @UseMiddleware(authMiddleware)
@@ -166,25 +177,28 @@ export class ChatUserResolver {
         const chat = await Chat.findOneBy({id: chatId})
 
         if (!chat) {
-            throw new Error("Chat with passed id not found!");
+            throw new HttpQueryError(404, "Chat not found");
         }
 
         const chatUser = await ChatUser.findOneBy({chatId: chatId, userId: context.req.userId});
 
-        if (chatUser) {
-            if (chatUser.userId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            chatUser.lastSeen = lastSeen;
-            await chatUser.save();
-
-            await pubSub.publish(`${SubscriptionType.CHANGE_LAST_SEEN}_${chatUser.userId}`, chatUser);
-
-            return true;
+        if (!chatUser) {
+            throw new HttpQueryError(404, "Chat user not found");
         }
 
-        return false;
+        if (chatUser.userId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (chatUser.lastSeen && chatUser.lastSeen >= lastSeen) {
+            return false;
+        }
+
+        chatUser.lastSeen = lastSeen;
+        await chatUser.save();
+        await pubSub.publish(`${SubscriptionType.CHANGE_LAST_SEEN}_${chatUser.userId}`, chatUser);
+
+        return true;
     }
 
     @Subscription(() => ChatUser, {

@@ -36,13 +36,11 @@ type Props = {
     onClick: () => void;
 };
 
-const Function = ({text, icon, onClick}: Props) => {
-    return (
-        <Container onClick={onClick}>
-            <Icon>{icon}</Icon>
-            <Text>{text}</Text>
-        </Container>
-    );
-};
+const Function = ({text, icon, onClick}: Props) => (
+    <Container onClick={onClick}>
+        <Icon>{icon}</Icon>
+        <Text>{text}</Text>
+    </Container>
+);
 
 export default Function;

@@ -49,9 +49,11 @@ export const tryRefreshTokens = async (cookies: { [p: string]: string }): Promis
         if (refreshTokenId) {
             const refreshToken = await RefreshToken.findOneBy({id: refreshTokenId});
 
-            if (refreshToken) {
+            if (refreshToken && refreshToken.expiredAt > new Date()) {
+                const refreshLifetime = process.env.REFRESH_TOKEN_LIFETIME as string;
                 const newRefreshToken = await RefreshToken.create({
-                    userId: refreshToken.userId
+                    userId: refreshToken.userId,
+                    expiredAt: new Date(new Date().setDate(new Date().getDate() + Number.parseInt(refreshLifetime)))
                 }).save();
 
                 await refreshToken.remove();

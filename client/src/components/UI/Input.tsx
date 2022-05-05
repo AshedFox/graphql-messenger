@@ -9,8 +9,8 @@ type Props = {
 export default styled.input<Props>`
   ${props => {
     switch (props._size) {
-        case "small": {
-            return css`
+      case "small": {
+        return css`
           font-size: 13px;
           height: 20px;
           padding: 0 8px;
@@ -19,11 +19,11 @@ export default styled.input<Props>`
             font-size: 12px;
           }
         `
-        }
+      }
 
-        case "medium":
-        default: {
-            return css`
+      case "medium":
+      default: {
+        return css`
           font-size: 15px;
           height: 31px;
           padding: 0 10px;
@@ -32,9 +32,9 @@ export default styled.input<Props>`
             font-size: 14px;
           }
         `
-        }
-        case "big": {
-            return css`
+      }
+      case "big": {
+        return css`
           font-size: 17px;
           height: 42px;
           padding: 0 12px;
@@ -43,9 +43,9 @@ export default styled.input<Props>`
             font-size: 16px;
           }
         `
-        }
+      }
     }
-}};
+  }};
   flex-grow: ${props => props._stretch ? "1" : "initial"};
   display: flex;
   align-items: center;

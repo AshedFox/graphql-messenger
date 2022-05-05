@@ -10,8 +10,7 @@ fragment MessageModel on Message {
         id,
         name,
         avatar {
-            id,
-            url
+            ...FileModel
         }
     }
     replyTo {
@@ -22,15 +21,16 @@ fragment MessageModel on Message {
         sender {
             name,
             avatar {
-                url
+                ...FileModel
             },
         },
     },
     attachments {
-        id,
-        originalName,
-        createdAt,
-        url,
-        type
+        file {
+            ...FileModel
+        },
+        message {
+            id
+        }
     }
 }

@@ -30,7 +30,6 @@ export class User extends BaseEntity {
     @Field()
     @IsEmail()
     @Column({unique: true})
-    @Index()
     email!: string;
 
     @Column()

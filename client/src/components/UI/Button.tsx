@@ -14,27 +14,27 @@ type Props = {
 const Container = styled.button<Props>`
   ${props => {
     switch (props._size) {
-        case "small": {
-            return css`
+      case "small": {
+        return css`
           padding: 4px 8px;
           font-size: 14px;
         `
-        }
-        case "medium":
-        default: {
-            return css`
+      }
+      case "medium":
+      default: {
+        return css`
           padding: 6px 10px;
           font-size: 16px;
         `
-        }
-        case "big": {
-            return css`
+      }
+      case "big": {
+        return css`
           padding: 9px 14px;
           font-size: 20px;
         `
-        }
+      }
     }
-}};
+  }};
   flex-grow: ${props => props._stretch ? "1" : "initial"};
 
   display: flex;

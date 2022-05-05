@@ -1,8 +1,8 @@
 import {MiddlewareFn} from "type-graphql";
 import {checkAuth, tryRefreshTokens} from "../services/authService";
-import {AuthenticationError} from "apollo-server-express";
 import {MyContext} from "../types/MyContext";
 import {createTokensCookies} from "../services/cookiesService";
+import {HttpQueryError} from "apollo-server-core";
 
 export const authMiddleware: MiddlewareFn<MyContext> = async ({context}, next) => {
     const userId = await checkAuth(context.req.cookies);
@@ -21,5 +21,5 @@ export const authMiddleware: MiddlewareFn<MyContext> = async ({context}, next) =
         return next();
     }
 
-    throw new AuthenticationError("Not authorized");
+    throw new HttpQueryError(401, "Not authorized");
 };

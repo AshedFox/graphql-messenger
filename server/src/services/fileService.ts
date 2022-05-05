@@ -17,7 +17,7 @@ class FilesService {
 
         return await File.create({
             type: fileType,
-            originalName: uploadResult.original_filename,
+            originalName: file.filename,
             url: uploadResult.url,
             size: uploadResult.bytes
         }).save();

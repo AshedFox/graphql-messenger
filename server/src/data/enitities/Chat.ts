@@ -20,7 +20,8 @@ import {User} from "./User";
 import {Message} from "./Message";
 import {ChatUser} from "./ChatUser";
 import {File} from "./File";
-import {IsUrl, Length} from "class-validator";
+import {Length} from "class-validator";
+import {ChatInvite} from "./ChatInvite";
 
 
 @ObjectType()
@@ -63,11 +64,6 @@ export class Chat extends BaseEntity {
     @Field({nullable: true})
     lastSeen?: Date;
 
-    @Field({nullable: true})
-    @Column({nullable: true})
-    @IsUrl()
-    inviteUrl?: string;
-
     @Column({nullable: true})
     avatarId?: string;
 
@@ -94,6 +90,10 @@ export class Chat extends BaseEntity {
     @Field(() => [Message])
     @OneToMany(() => Message, message => message.chat)
     messages!: Message[];
+
+    @Field(() => [ChatInvite])
+    @OneToMany(() => ChatInvite, invite => invite.chat)
+    invites!: ChatInvite[];
 
     @AfterSoftRemove()
     async updateStatusOnSoftRemove() {

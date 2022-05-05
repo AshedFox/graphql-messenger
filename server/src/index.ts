@@ -26,6 +26,10 @@ import {ApolloServerPluginDrainHttpServer} from "apollo-server-core";
 import {checkAuth, getUserIdFromRefreshToken} from "./services/authService";
 import {graphqlUploadExpress} from "graphql-upload";
 import {FileResolver} from "./data/resolvers/FileResolver";
+import {ChatInvite} from "./data/enitities/ChatInvite";
+import {ChatInviteResolver} from "./data/resolvers/ChatInviteResolver";
+import {MessageFileResolver} from "./data/resolvers/MessageFileResolver";
+import {MessageFile} from "./data/enitities/MessageFile";
 
 dotenv.config();
 
@@ -40,10 +44,11 @@ const main = async () => {
         type: "postgres",
         host: "localhost",
         port: 5432,
+        schema: "public",
         username: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: "graphql-chat",
-        entities: [Chat, User, ChatUser, File, Message, RefreshToken],
+        entities: [Chat, User, ChatUser, File, Message, RefreshToken, ChatInvite, MessageFile],
         synchronize: true,
         migrations: [path.join(__dirname, "./migrations/*")]
     });
@@ -66,9 +71,8 @@ const main = async () => {
     app.use(graphqlUploadExpress({maxFileSize: 50000000, maxFiles: 10}));
 
     const schema = await buildSchema({
-        resolvers: [ChatResolver, UserResolver, MessageResolver, ChatUserResolver, FileResolver],
-        dateScalarMode: "timestamp",
-        validate: false
+        resolvers: [ChatResolver, UserResolver, MessageResolver, ChatUserResolver, FileResolver, ChatInviteResolver, MessageFileResolver],
+        dateScalarMode: "timestamp"
     });
 
     const wsServer = new WebSocketServer({
@@ -107,6 +111,13 @@ const main = async () => {
     const apolloServer = new ApolloServer({
         schema: schema,
         context: ({req, res}: MyContext) => ({req, res}),
+        formatError: error => {
+            if (error.extensions.exception.name !== "HttpQueryError") {
+                console.log(error);
+                return new Error("Unknown error");
+            }
+            return error;
+        },
         plugins: [
             ApolloServerPluginDrainHttpServer({httpServer}),
             {

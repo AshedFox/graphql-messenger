@@ -38,6 +38,8 @@ const Container = styled.div<{ size?: "small" | "medium" | "big", onClick?: () =
   border-radius: 50%;
   overflow: hidden;
   background-color: ${props => props.theme.uiSecondaryBg};
+  //box-shadow: 1px 1px 1px 1px ${props => `${props.theme.secondaryBg}30`};
+  border: 1px solid ${props => `${props.theme.secondaryBg}30`};
 `
 
 const Image = styled.img`

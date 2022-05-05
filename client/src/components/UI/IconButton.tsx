@@ -21,4 +21,9 @@ export default styled.button<Props>`
   &:hover {
     color: ${props => (props._type ?? "primary") === "primary" ? props.theme.uiSecondaryHoverBg : props.theme.uiPrimaryHoverBg};
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    background-color: ${props => (props._type ?? "primary") === "primary" ? props.theme.primaryBg : props.theme.secondaryBg};
+  }
 `;

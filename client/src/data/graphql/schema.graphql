@@ -1,14 +1,15 @@
 type Query {
     searchChats(name: String, count: Int = 20, lastId: ID, lastCreatedAt: Timestamp): ChatsResult!
     chats(count: Int = 20, lastId: ID, lastCreatedAt: Timestamp): ChatsResult!
-    chat(id: ID!): Chat
+    chat(id: ID!): Chat!
     users: [User!]!
     user(id: ID!): User!
     me: User!
     messages(chatId: ID!, count: Int = 20, lastId: ID, lastCreatedAt: Timestamp): MessagesResult!
-    message(id: ID!): Message
+    message(id: ID!): Message!
     chatUser(chatId: ID!, userId: ID!): ChatUser!
     chatUsers(chatId: ID!, count: Int = 20, lastUserId: ID, lastCreatedAt: Timestamp): ChatUsersResult!
+    checkInvite(token: String!): Boolean!
 }
 
 type ChatsResult {
@@ -25,12 +26,12 @@ type Chat {
     status: ChatStatus!
     access: ChatAccess!
     lastSeen: Timestamp
-    inviteUrl: String
     avatar: File
     creator: User!
     users: [ChatUser!]!
     lastMessage: Message
     messages: [Message!]!
+    invites: [ChatInvite!]!
 }
 
 """
@@ -123,7 +124,21 @@ type Message {
     replyTo: Message
     sender: User!
     chat: Chat!
-    attachments: [File!]!
+    attachments: [MessageFile!]!
+}
+
+type MessageFile {
+    message: Message!
+    file: File!
+    createdAt: Timestamp!
+}
+
+type ChatInvite {
+    id: String!
+    chat: Chat!
+    token: String!
+    expiredAt: Timestamp
+    leftUses: Int
 }
 
 type MessagesResult {
@@ -138,22 +153,26 @@ type ChatUsersResult {
 
 type Mutation {
     addChat(input: AddChatInput!): Chat!
-    recoverChat(id: ID!): Chat
+    recoverChat(id: ID!): Chat!
     removeChat(id: ID!): Boolean!
     signUp(input: SignUpInput!): User!
     login(input: LoginInput!): User!
-    updateProfile(input: UpdateProfileInput!): User
+    updateProfile(input: UpdateProfileInput!): User!
     logout: Boolean!
-    removeMe: Boolean!
-    recoverUser(id: ID!): User
+    recoverUser(id: ID!): User!
     removeUser(id: ID!): Boolean!
+    removeMe: Boolean!
     addMessage(input: AddMessageInput!): Message!
-    recoverMessage(id: ID!): Message
+    recoverMessage(id: ID!): Message!
     removeMessage(id: ID!): Boolean!
-    joinChat(chatId: ID!): ChatUser
+    joinChat(chatId: ID!): ChatUser!
     leaveChat(chatId: ID!): Boolean!
     changeLastSeen(lastSeen: Timestamp!, chatId: ID!): Boolean!
     singleUpload(file: Upload!): File!
+    multipleUpload(files: [Upload!]!): [File!]!
+    activateInvite(token: String!): Boolean!
+    generateInvite(input: GenerateChatInviteInput!): Boolean!
+    removeInvite(id: ID!): Boolean!
 }
 
 input AddChatInput {
@@ -181,10 +200,27 @@ input AddMessageInput {
     text: String!
     replyToId: ID
     chatId: ID!
+    attachmentsIds: [String!]!
 }
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
+
+input GenerateChatInviteInput {
+    chatId: ID!
+    maxUses: Int
+    usageTerm: ChatInviteUsageTerm!
+}
+
+enum ChatInviteUsageTerm {
+    THIRTY_MINUTES
+    ONE_HOUR
+    TWELVE_HOURS
+    ONE_DAY
+    SEVEN_DAYS
+    THIRTY_DAYS
+    INFINITE
+}
 
 type Subscription {
     chatAdded(userId: ID!): Chat!
@@ -200,4 +236,7 @@ type Subscription {
     chatUserJoined(chatId: ID!): ChatUser!
     chatUserLeaved(chatId: ID!): ChatUser!
     chatUserUpdated(chatId: ID!): ChatUser!
+    chatInviteAdded(chatId: ID!): ChatInvite!
+    chatInviteUpdated(chatId: ID!): ChatInvite!
+    chatInviteRemoved(chatId: ID!): ChatInvite!
 }

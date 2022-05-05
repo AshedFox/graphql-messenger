@@ -1,0 +1,9 @@
+fragment ChatInviteModel on ChatInvite {
+    id,
+    token,
+    expiredAt,
+    leftUses,
+    chat {
+        id
+    }
+}

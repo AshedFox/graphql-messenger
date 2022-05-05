@@ -13,11 +13,13 @@ const InfoMessage = styled.div`
   color: ${props => props.theme.primaryText};
 `
 
-const RefreshButtonContainer = styled.div`
+const Container = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 15px;
 `
+
 
 const MainColumn = observer(() => {
     const {
@@ -34,7 +36,8 @@ const MainColumn = observer(() => {
             const result = await chatQuery({
                 variables: {
                     id: selectedChatId
-                }
+                },
+                fetchPolicy: "no-cache"
             });
 
             if (result.data && result.data.chat) {
@@ -70,18 +73,26 @@ const MainColumn = observer(() => {
     }, [selectedChatId]);
 
     if (!selectedChatId) {
-        return <InfoMessage>Выберите чат, чтобы увидеть здесь его содержимое!</InfoMessage>
+        return (
+            <Container>
+                <InfoMessage>Выберите чат, чтобы увидеть здесь его содержимое!</InfoMessage>
+            </Container>
+        )
     }
 
     if (loading) {
-        return <Loader stretch size={30}/>
+        return (
+            <Container>
+                <Loader stretch size={30}/>
+            </Container>
+        )
     }
 
     if (error) {
         return (
-            <RefreshButtonContainer>
+            <Container>
                 <Button _size={"medium"} _type={"secondary"} onClick={tryReload}>Попробовать снова</Button>
-            </RefreshButtonContainer>
+            </Container>
         )
     }
 

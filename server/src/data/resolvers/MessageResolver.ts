@@ -19,11 +19,12 @@ import {Message} from "../enitities/Message";
 import {AddMessageInput} from "../inputs/AddMessageInput";
 import {MyContext} from "../../types/MyContext";
 import {authMiddleware} from "../../middlewares/authMiddleware";
-import {ForbiddenError} from "apollo-server-core";
+import {HttpQueryError} from "apollo-server-core";
 import {Chat} from "../enitities/Chat";
 import {User} from "../enitities/User";
 import {SubscriptionType} from "./SubscriptionType";
 import {MessagesArgs} from "../args/MessagesArgs";
+import {MessageFile} from "../enitities/MessageFile";
 
 @ObjectType()
 export class MessagesResult {
@@ -51,6 +52,11 @@ export class MessageResolver {
         return await User.findOneBy({id: message.senderId});
     }
 
+    @FieldResolver(() => [MessageFile])
+    async attachments(@Root() message: Message): Promise<MessageFile[]> {
+        return await MessageFile.find({where: {messageId: message.id}});
+    }
+
 
     @Query(() => MessagesResult)
     async messages(@Args() {count, chatId, lastId, lastCreatedAt}: MessagesArgs): Promise<MessagesResult> {
@@ -67,7 +73,6 @@ export class MessageResolver {
         }
 
         queryBuilder = queryBuilder
-            .leftJoinAndSelect("message.attachments", "attachment")
             .orderBy({
                 "message.createdAt": "DESC",
                 "message.id": "DESC",
@@ -81,61 +86,82 @@ export class MessageResolver {
         };
     }
 
-    @Query(() => Message, {nullable: true})
-    async message(@Arg("id", () => ID) id: string): Promise<Message | null> {
-        return await Message.findOneBy({id});
+    @Query(() => Message)
+    async message(@Arg("id", () => ID) id: string): Promise<Message> {
+        const message = await Message.findOneBy({id});
+
+        if (!message) {
+            throw new HttpQueryError(404, "Message not found")
+        }
+
+        return message;
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Message)
     async addMessage(@Arg("input") addMessageInput: AddMessageInput, @Ctx() context: MyContext,
-                     @PubSub() pubSub: PubSubEngine): Promise<Message | null> {
+                     @PubSub() pubSub: PubSubEngine): Promise<Message> {
+        const chat = await Chat.findOneBy({id: addMessageInput.chatId})
+
+        if (!chat) {
+            throw new HttpQueryError(404, "Chat not found");
+        }
+
         const message = await Message.create({
             ...addMessageInput,
             senderId: context.req.userId,
-            attachments: []
-        }).save();
+        });
+        await message.save();
+        await MessageFile.insert(addMessageInput.attachmentsIds.map(fileId => ({fileId, messageId: message.id})));
 
         await pubSub.publish(`${SubscriptionType.MESSAGE_ADDED}_${message.chatId}`, message);
         return message;
     }
 
     @UseMiddleware(authMiddleware)
-    @Mutation(() => Message, {nullable: true})
-    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext): Promise<Message | null> {
-        const messageToRecover = await Message.findOne({where: {id}, withDeleted: true});
+    @Mutation(() => Message)
+    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext): Promise<Message> {
+        const message = await Message.findOne({where: {id}, withDeleted: true});
 
-        if (messageToRecover && messageToRecover.deletedAt) {
-            if (messageToRecover.senderId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            await messageToRecover.recover();
-            return await messageToRecover.save();
+        if (!message) {
+            throw new HttpQueryError(404, "Message not found");
         }
 
-        return null;
+        if (message.senderId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (!message.deletedAt) {
+            throw new HttpQueryError(409, "Message not deleted");
+        }
+
+        await message.recover();
+        return await message.save();
     }
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Boolean)
     async removeMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
                         @PubSub() pubSub: PubSubEngine): Promise<boolean> {
-        const message = await Message.findOneBy({id});
+        const message = await Message.findOne({where: {id}, withDeleted: true});
 
-        if (message) {
-            if (message.senderId !== context.req.userId) {
-                throw new ForbiddenError("No access!");
-            }
-
-            await message.softRemove();
-            await message.save();
-            await pubSub.publish(`${SubscriptionType.MESSAGE_REMOVED}_${message.chatId}`, message);
-
-            return true;
+        if (!message) {
+            throw new HttpQueryError(404, "Message not found");
         }
 
-        return false;
+        if (message.senderId !== context.req.userId) {
+            throw new HttpQueryError(403, "Forbidden");
+        }
+
+        if (message.deletedAt) {
+            throw new HttpQueryError(409, "Message already deleted");
+        }
+
+        await message.softRemove();
+        await message.save();
+        await pubSub.publish(`${SubscriptionType.MESSAGE_REMOVED}_${message.chatId}`, message);
+
+        return true;
     }
 
     @Subscription(() => Message, {

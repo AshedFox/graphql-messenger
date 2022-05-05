@@ -37,19 +37,27 @@ const CreateChatModal = observer(() => {
     const [error, setError] = useState("");
 
     const handleChatCreation = async () => {
-        const addChatResult = await addChatMutation({
-            variables: {
-                input: {
-                    ...addChatInput,
-                    avatarId: fileData?.singleUpload.id
-                }
-            }
-        });
+        if (addChatInput.name.trim().length < 3 || addChatInput.name.trim().length > 200) {
+            return setError("Название чата должно быть от 3 до 200 символов длиной");
+        }
 
-        if (addChatResult.errors || !addChatResult.data) {
+        try {
+            const addChatResult = await addChatMutation({
+                variables: {
+                    input: {
+                        name: addChatInput.name.trim(),
+                        avatarId: fileData?.singleUpload.id
+                    }
+                }
+            });
+
+            if (addChatResult.errors || !addChatResult.data) {
+                setError("Не удалось создать чат!");
+            } else {
+                startClosing();
+            }
+        } catch {
             setError("Не удалось создать чат!");
-        } else {
-            startClosing();
         }
     }
 
@@ -76,12 +84,16 @@ const CreateChatModal = observer(() => {
     }
 
     return (
-        <Modal status={status} startClosing={startClosing} endClosing={endClosing} title={"Создание чата"}
+        <Modal status={status} startClosing={startClosing} endClosing={() => {
+            setError("");
+            setAddChatInput(initialAddChatInput);
+            resetFile();
+            endClosing();
+        }} title={"Создание чата"}
                footer={(
                    <Footer>
                        {error && <Error>{error}</Error>}
-                       <Button onClick={handleChatCreation} _type={"secondary"} _stretch disabled={fileLoading}>Создать
-                           чат</Button>
+                       <Button onClick={handleChatCreation} _type={"secondary"} _stretch disabled={fileLoading}>Создать чат</Button>
                    </Footer>
                )}
         >

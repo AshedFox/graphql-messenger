@@ -1,13 +1,4 @@
-import {
-    BaseEntity,
-    Column,
-    CreateDateColumn,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn
-} from "typeorm";
+import {BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {User} from "./User";
 
 @Entity()
@@ -22,9 +13,6 @@ export class RefreshToken extends BaseEntity {
     @JoinColumn({name: "userId"})
     user!: User;
 
-    @CreateDateColumn()
-    createdAt!: Date;
-
-    @UpdateDateColumn()
-    updatedAt!: Date;
+    @Column()
+    expiredAt!: Date;
 }

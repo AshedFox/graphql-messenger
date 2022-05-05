@@ -45,7 +45,6 @@ const Header = observer(({search}: Props) => {
             } finally {
                 setLoading(false);
             }
-
         }
     }
 

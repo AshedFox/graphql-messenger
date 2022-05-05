@@ -7,16 +7,15 @@ import {
     Entity,
     Index,
     JoinColumn,
-    JoinTable,
-    ManyToMany,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn
 } from "typeorm";
 import {User} from "./User";
 import {Chat} from "./Chat";
-import {File} from "./File";
 import {Length} from "class-validator";
+import {MessageFile} from "./MessageFile";
 
 
 @ObjectType()
@@ -70,9 +69,9 @@ export class Message extends BaseEntity {
     @JoinColumn({name: "chatId"})
     chat!: Chat;
 
-    @Field(() => [File])
-    @ManyToMany(() => File)
-    @JoinTable()
-    attachments!: File[];
+    @Field(() => [MessageFile])
+    @OneToMany(() => MessageFile, messageFile => messageFile.messageId)
+    @JoinColumn()
+    attachments!: MessageFile[];
 }
 

@@ -4,15 +4,15 @@ import {observer} from "mobx-react-lite";
 import {useChatUsersModalStore} from "../../stores/chatUsersModalStore";
 import styled from "styled-components";
 import Avatar from "../UI/Avatar";
-import {ChatUserRole} from "../../data/generated/graphql";
 import {ChatUserModel} from "../../types/models";
+import {mapRole} from "../../services/enumMapper";
 
 const List = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   gap: 15px;
-  overflow-x: auto;
+  overflow-y: auto;
   padding: 10px;
 `
 
@@ -37,19 +37,6 @@ const Role = styled.div`
   color: ${props => props.theme.primaryText};
   margin-left: auto;
 `
-
-const mapRole = (role: ChatUserRole) => {
-    switch (role) {
-        case ChatUserRole.Default:
-            return "Участник"
-        case ChatUserRole.Moderator:
-            return "Модератор"
-        case ChatUserRole.Admin:
-            return "Администратор"
-        case ChatUserRole.Owner:
-            return "Владелец"
-    }
-}
 
 type Props = {
     chatUsers: ChatUserModel[]

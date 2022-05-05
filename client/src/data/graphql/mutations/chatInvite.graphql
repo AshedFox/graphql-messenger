@@ -1,0 +1,11 @@
+mutation ActivateInvite($token: String!) {
+    activateInvite(token: $token)
+}
+
+mutation GenerateInvite($input: GenerateChatInviteInput!) {
+    generateInvite(input: $input)
+}
+
+mutation RemoveInvite($id: ID!) {
+    removeInvite(id: $id)
+}

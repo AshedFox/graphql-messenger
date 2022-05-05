@@ -1,6 +1,6 @@
 import {computed, makeAutoObservable} from "mobx";
 import {createContext, useContext} from "react";
-import {ChatModel, ChatUserModel, FullChatModel, MessageModel} from "../types/models";
+import {ChatInviteModel, ChatModel, ChatUserModel, FullChatModel, MessageModel} from "../types/models";
 import {userStore} from "./userStore";
 
 class ChatsStore {
@@ -34,13 +34,18 @@ class ChatsStore {
 
     @computed
     get selectedChat(): FullChatModel | null {
-        return this._fullChats.get(this.selectedChatId ?? "") ?? null;
+        if (!this.selectedChatId) {
+            return null;
+        }
+        const fullChat = this._fullChats.get(this.selectedChatId);
+
+        return fullChat || null;
     }
 
     @computed
     get isParticipant(): boolean {
         if (this.selectedChatId && userStore.me) {
-            return this.checkParticipant(this.selectedChatId, userStore.me.id);
+            return this.checkParticipant(this.selectedChatId);
         }
         return false;
     }
@@ -59,7 +64,7 @@ class ChatsStore {
     setLoading = (loading: boolean) => this.loading = loading;
     setError = (error: boolean) => this.error = error;
 
-    //chats
+    // chats
     setChats = (chats: ChatModel[]) => {
         this._chats = chats;
     }
@@ -71,6 +76,7 @@ class ChatsStore {
     }
     updateChat = (chat: ChatModel) => {
         this._chats = this._chats.map(c => c.id === chat.id ? chat : c);
+        this.searchChats = this.searchChats.map(c => c.id === chat.id ? chat : c);
 
         const fullChat = this._fullChats.get(chat.id);
         if (fullChat) {
@@ -78,12 +84,24 @@ class ChatsStore {
         }
     }
     shouldRenewLastSeen = (chatId: string, newLastSeen: Date) => {
-        return this._chats.find(chat => chat.id === chatId)?.lastSeen < newLastSeen;
+        const chat = this._chats.find(chat => chat.id === chatId);
+        if (!chat) {
+            return false;
+        }
+        return !chat.lastSeen || chat.lastSeen < newLastSeen;
+
+        //return this._chats.find(chat => chat.id === chatId)?.lastSeen < newLastSeen;
         //return this._fullChats.get(chatId)?.lastSeen < newLastSeen;
     }
     updateChatLastSeen = (chatId: string, lastSeen: Date) => {
         if (this.shouldRenewLastSeen(chatId, lastSeen)) {
             this._chats = this._chats.map(chat => {
+                if (chat.id === chatId) {
+                    chat.lastSeen = lastSeen;
+                }
+                return chat;
+            });
+            this.searchChats = this.searchChats.map(chat => {
                 if (chat.id === chatId) {
                     chat.lastSeen = lastSeen;
                 }
@@ -101,8 +119,11 @@ class ChatsStore {
         this._chats = this._chats.filter(chat => chat.id !== chatId);
         this._fullChats.delete(chatId);
     }
+    removeFullChat = (chatId: string) => {
+        this._fullChats.delete(chatId);
+    }
 
-    //messages
+    // messages
     addMessage = (message: MessageModel) => {
         const fullChat = this._fullChats.get(message.chat.id);
 
@@ -186,7 +207,7 @@ class ChatsStore {
         });
     }
 
-    //addChatUser
+    // chat users
     addChatUser = (chatUser: ChatUserModel) => {
         const fullChat = this._fullChats.get(chatUser.chat.id);
 
@@ -234,6 +255,14 @@ class ChatsStore {
             }
             return chat;
         });
+        this.searchChats = this.searchChats.map(chat => {
+            if (chat.id === chatUser.chat.id) {
+                chat.lastMessage = chatUser.user.id === chat.lastMessage?.sender.id ?
+                    {...chat.lastMessage, sender: chatUser.user} :
+                    chat.lastMessage;
+            }
+            return chat;
+        });
     }
     removeChatUser = (chatId: string, chatUserId: string) => {
         const fullChat = this._fullChats.get(chatId);
@@ -245,6 +274,9 @@ class ChatsStore {
             });
         }
     }
+
+    //invites
+
 
     //search
     setIsSearch = (isSearch: boolean) => {
@@ -279,14 +311,40 @@ class ChatsStore {
         }
     }
 
-    checkParticipant = (chatId: string, userId: string): boolean => {
-        const chat = this._fullChats.get(chatId);
+    // invites
+    addChatInvite = (chatInvite: ChatInviteModel) => {
+        const fullChat = this._fullChats.get(chatInvite.chat.id);
 
-        if (chat) {
-            return chat.users.some(chatUser => chatUser.user.id === userId);
+        if (fullChat) {
+            this._fullChats.set(chatInvite.chat.id, {
+                ...fullChat,
+                invites: [chatInvite, ...fullChat.invites]
+            });
         }
+    }
+    updateChatInvite = (chatInvite: ChatInviteModel) => {
+        const fullChat = this._fullChats.get(chatInvite.chat.id);
 
-        return false;
+        if (fullChat) {
+            this._fullChats.set(chatInvite.chat.id, {
+                ...fullChat,
+                invites: fullChat.invites.map(invite => invite.id === chatInvite.id ? chatInvite : invite)
+            });
+        }
+    }
+    removeChatInvite = (chatInvite: ChatInviteModel) => {
+        const fullChat = this._fullChats.get(chatInvite.chat.id);
+
+        if (fullChat) {
+            this._fullChats.set(chatInvite.chat.id, {
+                ...fullChat,
+                invites: fullChat.invites.filter(invite => invite.id !== chatInvite.id)
+            });
+        }
+    }
+
+    checkParticipant = (chatId: string): boolean => {
+        return !!this._chats.find(chat => chatId === chat.id);
     }
 }
 
