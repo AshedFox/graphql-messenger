@@ -13,15 +13,9 @@ const initialSignUpInput: SignUpInput = {
     name: ""
 }
 
-const Error = styled.div`
-  font-size: 14px;
-  font-weight: 400;
-  color: ${props => props.theme.optionalText};
-`
-
 const SignUpForm = () => {
     const [signUpInput, setSignUpInput] = useState(initialSignUpInput);
-    const [signUp, {loading, error}] = useSignUpMutation();
+    const [signUp, {loading}] = useSignUpMutation();
     const navigate = useNavigate()
     const {setMe} = useUserStore();
 
@@ -70,7 +64,6 @@ const SignUpForm = () => {
                    minLength={3} maxLength={200} required
                    autoComplete={"name"} autoCorrect={"off"} value={signUpInput.name} onChange={handleChange}
             />
-            {error && <Error>{error.message}</Error>}
         </Form>
     );
 };

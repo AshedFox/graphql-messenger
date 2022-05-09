@@ -120,7 +120,8 @@ export class MessageResolver {
 
     @UseMiddleware(authMiddleware)
     @Mutation(() => Message)
-    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext): Promise<Message> {
+    async recoverMessage(@Arg("id", () => ID) id: string, @Ctx() context: MyContext,
+                         @PubSub() pubSub: PubSubEngine): Promise<Message> {
         const message = await Message.findOne({where: {id}, withDeleted: true});
 
         if (!message) {
@@ -136,7 +137,10 @@ export class MessageResolver {
         }
 
         await message.recover();
-        return await message.save();
+        await message.save();
+        await pubSub.publish(`${SubscriptionType.MESSAGE_RECOVERED}_${message.chatId}`, message);
+
+        return message
     }
 
     @UseMiddleware(authMiddleware)
@@ -169,6 +173,13 @@ export class MessageResolver {
 
     })
     async messageAdded(@Root() message: Message, @Arg("chatId", () => ID) chatId: string): Promise<Message> {
+        return message;
+    }
+
+    @Subscription(() => Message, {
+        topics: (data) => `${SubscriptionType.MESSAGE_RECOVERED}_${data.args.chatId}`,
+    })
+    async messageRecovered(@Root() message: Message, @Arg("chatId", () => ID) chatId: string): Promise<Message> {
         return message;
     }
 

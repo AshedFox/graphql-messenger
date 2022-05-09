@@ -59,7 +59,7 @@ export class ChatUserResolver {
         const chat = await Chat.findOneBy({id: chatId});
 
         if (!chat) {
-            throw new Error("Chat with passed id not found!");
+            throw new HttpQueryError(404, "Chat with passed id not found!");
         }
 
         let queryBuilder = ChatUser.createQueryBuilder("chatUser")

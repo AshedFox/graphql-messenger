@@ -223,8 +223,6 @@ export class ChatResolver {
             throw new HttpQueryError(409, "Chat already deleted");
         }
 
-        chat.users = await this.users(chat);
-
         await chat.softRemove()
         await chat.save();
         await pubSub.publish(`${SubscriptionType.CHAT_REMOVED}_${chat.id}`, chat);
@@ -242,6 +240,13 @@ export class ChatResolver {
         topics: (data) => `${SubscriptionType.CHAT_UPDATED}_${data.args.chatId}`,
     })
     async chatUpdated(@Root() chat: Chat, @Arg("chatId", () => ID) chatId: string) {
+        return chat;
+    }
+
+    @Subscription(() => Chat, {
+        topics: (data) => `${SubscriptionType.CHAT_RECOVERED}_${data.args.chatId}`
+    })
+    async chatRecovered(@Root() chat: Chat, @Arg("chatId", () => ID) chatId: string): Promise<Chat> {
         return chat;
     }
 

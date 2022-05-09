@@ -11,15 +11,9 @@ const initialLoginInput: LoginInput = {
     password: ""
 }
 
-const Error = styled.div`
-  font-size: 14px;
-  font-weight: 400;
-  color: ${props => props.theme.optionalText};
-`
-
 const LoginForm = () => {
     const [loginInput, setLoginInput] = useState(initialLoginInput);
-    const [login, {loading, error}] = useLoginMutation();
+    const [login, {loading}] = useLoginMutation();
     const navigate = useNavigate();
     const {setMe} = useUserStore();
 
@@ -63,7 +57,6 @@ const LoginForm = () => {
                    autoComplete={"current-password"} autoCorrect={"off"} value={loginInput.password}
                    onChange={handleChange}
             />
-            {error && <Error>{error.message}</Error>}
         </Form>
     );
 };
