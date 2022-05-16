@@ -13,9 +13,7 @@ const MessageWrapper = (props: MessageProps) => {
     useLayoutEffect(() => {
         if (shouldRenewLastSeen(props.message.chat.id, props.message.createdAt)) {
             const observer = new IntersectionObserver((e) => {
-                console.log(e);
                 if (e[0].isIntersecting) {
-                    console.log(123);
                     if (shouldRenewLastSeen(props.message.chat.id, props.message.createdAt)) {
                         changeLastSeenMutation({
                             variables: {

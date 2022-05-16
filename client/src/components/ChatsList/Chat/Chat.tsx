@@ -81,9 +81,9 @@ const SeenMarker = styled.div`
   background-color: darkcyan;
 `
 
-const Chat = ({chat, selected, onClick}: ChatProps) => (
+const Chat = ({chat, selected, isParticipant, onClick}: ChatProps) => (
     <Container selected={selected} onClick={onClick}>
-        {chat.lastSeen && chat.lastMessage?.createdAt > chat.lastSeen &&
+        {chat.lastSeen && chat.lastMessage?.createdAt > chat.lastSeen && isParticipant &&
             <SeenMarker/>
         }
         <Avatar size={"medium"} src={chat.avatar?.url} alt={"chat_icon"}/>

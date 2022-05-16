@@ -33,6 +33,12 @@ class ChatsStore {
     }
 
     @computed
+    get allChatsIds(): string[] {
+        const allUniqueIds = new Set<string>([...this.sortedChats.map(chat => chat.id), ...this.searchChats.map(chat => chat.id)]);
+        return Array.from(allUniqueIds.values());
+    }
+
+    @computed
     get selectedChat(): FullChatModel | null {
         if (!this.selectedChatId) {
             return null;
@@ -229,6 +235,7 @@ class ChatsStore {
         }
     }
     updateChatUser = (chatUser: ChatUserModel) => {
+        console.log("01");
         const fullChat = this._fullChats.get(chatUser.chat.id);
 
         if (fullChat) {

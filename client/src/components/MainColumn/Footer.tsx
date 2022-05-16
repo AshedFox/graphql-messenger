@@ -88,7 +88,8 @@ const Footer = ({isParticipant, selectedChatId}: Props) => {
                                 attachmentsIds: messageFiles.map(file => file.id),
                                 chatId: selectedChatId
                             }
-                        }
+                        },
+                        fetchPolicy: "no-cache"
                     });
 
                     if (result.data) {
@@ -112,7 +113,8 @@ const Footer = ({isParticipant, selectedChatId}: Props) => {
                 const result = await joinChatMutation({
                     variables: {
                         chatId: selectedChatId
-                    }
+                    },
+                    fetchPolicy: "no-cache"
                 });
 
                 if (!result.data) {
@@ -129,7 +131,6 @@ const Footer = ({isParticipant, selectedChatId}: Props) => {
             const filesArray = Array.from(files);
             if (messageFiles.length + filesArray.length <= 10) {
                 for (let i = 0; i < filesArray.length; i++) {
-                    console.log("iteration")
                     const uploadResult = await singleUploadMutation({
                         variables: {
                             input: filesArray[i]
@@ -199,7 +200,9 @@ const Footer = ({isParticipant, selectedChatId}: Props) => {
                         <IoSend size={24}/>
                     </IconButton>
                 </Content> :
-                <Button _stretch _type={"secondary"} _size={"big"} onClick={joinChat}>Присоединиться</Button>
+                <Content>
+                    <Button _stretch _type={"secondary"} _size={"big"} onClick={joinChat}>Присоединиться</Button>
+                </Content>
             }
         </Container>
     );

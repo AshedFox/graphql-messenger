@@ -4,6 +4,7 @@ import {observer} from "mobx-react-lite";
 import {useChatsStore} from "../../stores/chatsStore";
 import styled from "styled-components";
 import {Button, Loader} from '../UI';
+import ChatSubscriber from "../ChatSubscriber";
 
 
 const Container = styled.div`
@@ -24,7 +25,8 @@ const Main = observer(({load, search}: Props) => {
         selectedChatId, setSelectedChatId,
         sortedChats, searchChats,
         loading, error,
-        setLoading, setError
+        setLoading, setError,
+        allChatsIds
     } = useChatsStore();
 
 
@@ -47,7 +49,7 @@ const Main = observer(({load, search}: Props) => {
         setLoading(true);
 
         load().catch(() => setError(true)).finally(() => setLoading(false));
-    }, []);
+    }, [load]);
 
     if (loading) {
         return (
@@ -66,13 +68,16 @@ const Main = observer(({load, search}: Props) => {
     }
 
     return (
-        <ChatsList chats={isSearch ? searchChats : sortedChats}
-                   selectChat={(id?: string) => {
-                       setSelectedChatId(id)
-                   }}
-                   selectedChatId={selectedChatId}
-                   emptyMessage={isSearch ? "Не удалось ничего найти!" : "Список чатов пуст!"}
-        />
+        <>
+            {allChatsIds.map((id) => <ChatSubscriber key={id} chatId={id}/>)}
+            <ChatsList chats={isSearch ? searchChats : sortedChats}
+                       selectChat={(id?: string) => {
+                           setSelectedChatId(id)
+                       }}
+                       selectedChatId={selectedChatId}
+                       emptyMessage={isSearch ? "Не удалось ничего найти!" : "Список чатов пуст!"}
+            />
+        </>
     );
 });
 

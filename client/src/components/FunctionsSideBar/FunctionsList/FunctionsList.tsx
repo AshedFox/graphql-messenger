@@ -37,9 +37,9 @@ const FunctionsList = () => {
     const handleThemeSwitch = () => switchTheme();
 
     const reset = () => {
-        resetFunctionsSideBar();
-        resetChats();
         resetUser();
+        resetChats();
+        resetFunctionsSideBar();
     }
 
     const handleLogout = async () => {
@@ -61,7 +61,6 @@ const FunctionsList = () => {
                 <Function icon={<AiOutlineUserAdd size={24}/>} text={"Создать чат"} onClick={open}/>
                 <Function icon={<BiMoon size={24}/>} text={"Сменить тему"} onClick={handleThemeSwitch}/>
                 <Function icon={<BiLogOut size={24}/>} text={"Выйти из аккаунта"} onClick={handleLogout}/>
-                {/*<Function icon={<AiOutlineDelete size={24}/>} text={"Удалить аккаунт"} onClick={handleAccountDeletion}/>*/}
             </List>
         </Container>
     );

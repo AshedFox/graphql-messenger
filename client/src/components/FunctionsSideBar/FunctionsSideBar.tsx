@@ -30,8 +30,9 @@ const FunctionsSideBar = observer(() => {
     useEffect(() => {
         if (status === Status.Closed) {
             setIsInEditMode(false);
+            setNewName(me!.name);
         }
-    }, [status]);
+    }, [me, status]);
 
     if (!me) {
         return null;

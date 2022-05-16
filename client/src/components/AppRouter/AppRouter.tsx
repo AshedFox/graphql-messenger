@@ -28,7 +28,9 @@ const AppRouter = observer(() => {
         setLoading(true);
         const queryUser = async () => {
             try {
-                const result = await getMe();
+                const result = await getMe({
+                    fetchPolicy: "no-cache"
+                });
 
                 if (result.data) {
                     setMe(result.data.me);

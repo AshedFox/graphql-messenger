@@ -1,12 +1,12 @@
 import Chat from './Chat';
-import useSubscribeChat from "../../../hooks/useSubscribeChat";
 import {ChatProps} from "./types";
+import {observer} from "mobx-react-lite";
+import {useChatsStore} from "../../../stores/chatsStore";
 
 
-const ChatWrapper = (props: ChatProps) => {
-    useSubscribeChat(props.chat.id);
-
-    return <Chat {...props}/>
-};
+const ChatWrapper = observer((props: ChatProps) => {
+    const {checkParticipant} = useChatsStore();
+    return <Chat {...props} isParticipant={checkParticipant(props.chat.id)}/>
+});
 
 export default ChatWrapper;

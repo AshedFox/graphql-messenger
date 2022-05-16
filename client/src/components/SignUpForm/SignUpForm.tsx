@@ -1,6 +1,5 @@
 import React, {ChangeEvent, FormEvent, useState} from 'react';
 import {SHA512} from "crypto-js"
-import styled from "styled-components";
 import {SignUpInput, useSignUpMutation} from "../../data/generated/graphql";
 import {useNavigate} from "react-router-dom";
 import {useUserStore} from "../../stores/userStore";

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import styled from "styled-components";
 import {useChatsLazyQuery, useSearchChatsLazyQuery} from "../../data/generated/graphql";
 import {useChatsStore} from "../../stores/chatsStore";
 import Main from "./Main";
 import Header from "./Header";
+import {observer} from "mobx-react-lite";
+import {useUserStore} from "../../stores/userStore";
 
 const Container = styled.div`
   display: grid;
@@ -12,19 +14,21 @@ const Container = styled.div`
   min-width: 220px;
 `
 
-const LeftColumn = () => {
+const LeftColumn = observer(() => {
     const {
         setChats, setSearchChats,
         setIsSearch, resetSearch,
     } = useChatsStore();
+    const {me} = useUserStore();
     const [chatsQuery] = useChatsLazyQuery();
     const [searchChatsQuery] = useSearchChatsLazyQuery();
 
-    const loadChats = async () => {
+    const loadChats = useCallback(async () => {
         const result = await chatsQuery({
             variables: {
-                count: -1
-            }
+                count: -1,
+            },
+            fetchPolicy: "no-cache"
         });
 
         if (result.data) {
@@ -32,7 +36,7 @@ const LeftColumn = () => {
         } else {
             throw new Error();
         }
-    }
+    }, [me?.id]);
 
     const search = async (searchText: string) => {
         if (searchText.trim() !== "") {
@@ -40,8 +44,10 @@ const LeftColumn = () => {
 
             const searchResult = await searchChatsQuery({
                 variables: {
-                    name: searchText
-                }
+                    name: searchText,
+                    count: -1
+                },
+                fetchPolicy: "no-cache"
             });
 
             if (searchResult.data) {
@@ -60,6 +66,6 @@ const LeftColumn = () => {
             <Main load={loadChats} search={search}/>
         </Container>
     )
-};
+});
 
 export default LeftColumn;

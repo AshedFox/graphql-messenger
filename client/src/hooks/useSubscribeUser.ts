@@ -9,7 +9,7 @@ import {useChatsStore} from "../stores/chatsStore";
 import {useUserStore} from "../stores/userStore";
 
 const useSubscribeUser = (userId: string) => {
-    const {addChat, removeChat, removeFullChat, selectIfNoSelected, unselectIfSelected,
+    const {addChat, removeChat, removeFullChat, unselectIfSelected,
         updateChatLastSeen} = useChatsStore();
     const {setMe} = useUserStore();
 
@@ -23,7 +23,6 @@ const useSubscribeUser = (userId: string) => {
                 const chat = subscriptionData.data.chatAdded;
 
                 addChat(chat);
-                selectIfNoSelected(chat.id);
             }
         }
     });
@@ -40,10 +39,6 @@ const useSubscribeUser = (userId: string) => {
                 removeFullChat(chat.id);
                 unselectIfSelected(chat.id);
                 addChat(chat);
-                //addFullChat(chat);
-                //removeChat(chat.id);
-                //addChat(chat);
-                selectIfNoSelected(chat.id);
             }
         }
     });
