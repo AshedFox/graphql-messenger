@@ -33,6 +33,8 @@ Install dependencies
     npm install
 ```
 
+Add environment variable, more about this [here](./server)
+
 Build server
 
 ```bash
