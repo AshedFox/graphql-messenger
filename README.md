@@ -7,62 +7,35 @@ Real-time web-messenger based on Node.js, React and GraphQL
 
 ## How to run locally?
 
-Clone the project
+#### Clone the project from GitHub
 
-```bash
-  git clone https://github.com/AshedFox/GraphQL_Messenger
+```shell
+git clone https://github.com/AshedFox/graphql-messenger
 ```
 
-Move to project directory
+#### Move to project directory
 
-```bash
-    cd ./GraphQL_Messenger
+```shell
+cd ./graphql-messenger
 ```
 
-### To run server
+#### Install dependencies
 
-Move to server subdirectory
-
-```bash
-    cd ./server
+```shell
+npm install
 ```
 
-Install dependencies
+#### Add environment variables: 
+- for server (more info [here](./server/README.md))
+- for client (more info [here](./client/README.md))
 
-```bash
-    npm install
+#### Start server
+
+```shell
+npm run start:server
 ```
 
-Add environment variable, more about this [here](./server)
-
-Build server
-
-```bash
-    npm run build
-```
-
-Start server
-
-```bash
-    npm run start
-```
-
-### To run client
-
-Move to client subdirectory
-
-```bash
-    cd ./client
-```
-
-Install dependencies
-
-```bash
-    npm install
-```
-
-Start client
-
-```bash
-    npm run start
+#### Start client
+```shell
+npm run start:client
 ```

@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prestart": "npm run build",
     "start": "node build/index.js",
-    "postinstall": "npm run build",
-    "dev": "nodemon src/index.ts",
-    "build": "tsc"
+    "dev": "nodemon src/index.ts"
   },
   "keywords": [],
   "author": "",

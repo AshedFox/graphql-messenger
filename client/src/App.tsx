@@ -11,12 +11,12 @@ import {getMainDefinition} from '@apollo/client/utilities';
 
 
 const wsLink = new GraphQLWsLink(createClient({
-    url: "ws://localhost:3000/graphql",
+    url: `${process.env.REACT_APP_API_WS_URL}/graphql`,
 }));
 
 const uploadLink = createUploadLink({
     credentials: "include",
-    uri: "http://localhost:3000/graphql",
+    uri: `${process.env.REACT_APP_API_URL}/graphql`,
 });
 
 const splitLink = split(

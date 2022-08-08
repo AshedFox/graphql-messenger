@@ -1,0 +1,16 @@
+{
+  "name": "graphql-messenger",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently 'npm:start:*'",
+    "start:client": "npm start -w client",
+    "start:server": "npm start -w server"
+  },
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "dependencies": {
+    "concurrently": "^7.3.0"
+  }
+}

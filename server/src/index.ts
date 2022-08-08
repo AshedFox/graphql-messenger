@@ -42,15 +42,10 @@ const main = async () => {
 
     const appDataSource = new DataSource({
         type: "postgres",
-        host: "localhost",
-        port: 5432,
-        schema: "public",
-        username: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: "graphql-chat",
+        url: process.env.DATABASE_URL,
         entities: [Chat, User, ChatUser, File, Message, RefreshToken, ChatInvite, MessageFile],
         synchronize: true,
-        migrations: [path.join(__dirname, "./migrations/*")]
+        migrations: [path.join(__dirname, "./migrations/*")],
     });
 
     await appDataSource.initialize();
@@ -109,7 +104,7 @@ const main = async () => {
     }, wsServer);
 
     const apolloServer = new ApolloServer({
-        schema: schema,
+        schema,
         context: ({req, res}: MyContext) => ({req, res}),
         formatError: error => {
             if (error.extensions.exception.name !== "HttpQueryError") {
