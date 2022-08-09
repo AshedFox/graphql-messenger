@@ -6,7 +6,7 @@ import {Stream} from "stream";
 import {File} from "../data/enitities/File";
 
 
-class FilesService {
+export class FileService {
     createFile = async (file: FileUpload) => {
         const fileType = this.defineFileType(file.mimetype);
         const uploadResult = await this.uploadFile(file.createReadStream(), fileType);
@@ -50,5 +50,3 @@ class FilesService {
         })
     }
 }
-
-export default new FilesService();

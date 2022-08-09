@@ -71,10 +71,3 @@ export const tryRefreshTokens = async (cookies: { [p: string]: string }): Promis
         return undefined;
     }
 }
-
-
-export default {
-    checkAuth,
-    generateAccessToken,
-    tryRefreshTokens
-}

@@ -2,7 +2,7 @@
   "name": "graphql-messenger",
   "version": "1.0.0",
   "scripts": {
-    "start:client": "npm start -w client",
-    "start:server": "npm start -w server"
+    "start:client": "cd client && npm start",
+    "start:server": "cd server && npm start"
   }
 }

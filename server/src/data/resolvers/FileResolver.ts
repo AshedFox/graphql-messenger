@@ -1,14 +1,20 @@
 import {Arg, Mutation, Resolver} from "type-graphql";
 import {File} from "../enitities/File";
 import {FileUpload, GraphQLUpload} from "graphql-upload";
-import fileService from "../../services/fileService";
+import {FileService} from "../../services/fileService";
 
 
 @Resolver(File)
 export class FileResolver {
+    private readonly fileService: FileService;
+
+    constructor() {
+        this.fileService = new FileService();
+    }
+
     @Mutation(() => File)
     async singleUpload(@Arg("file", () => GraphQLUpload) file: FileUpload): Promise<File> {
-        const result = await fileService.createFile(file);
+        const result = await this.fileService.createFile(file);
 
         if (!result) {
             throw new Error("Failed to upload file");
