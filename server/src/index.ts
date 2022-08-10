@@ -45,6 +45,9 @@ const main = async () => {
         url: process.env.DATABASE_URL,
         entities: [Chat, User, ChatUser, File, Message, RefreshToken, ChatInvite, MessageFile],
         synchronize: true,
+        ssl: process.env.SSL_ENABLED === 'true' ?
+            { rejectUnauthorized: false } :
+            false,
         migrations: [path.join(__dirname, "./migrations/*")],
     });
 
