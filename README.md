@@ -5,7 +5,8 @@ Real-time web-messenger based on Node.js, React and GraphQL
 
 ![App Screenshot](preview.png)
 
-You may try app, deployed on Heroku, [here](https://graphql-messenger-client.herokuapp.com/).
+You may try client app, deployed on Heroku, [here](https://graphql-messenger-client.herokuapp.com/), 
+or discover api with graphql playground [here](https://graphql-messenger-server.herokuapp.com/graphql).
 
 ## How to run locally?
 
