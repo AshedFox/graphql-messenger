@@ -22,7 +22,11 @@ import {MessageResolver} from "./data/resolvers/MessageResolver";
 import {ChatUserResolver} from "./data/resolvers/ChatUserResolver";
 import {WebSocketServer} from "ws";
 import {useServer} from "graphql-ws/lib/use/ws";
-import {ApolloServerPluginDrainHttpServer} from "apollo-server-core";
+import {
+    ApolloServerPluginDrainHttpServer,
+    ApolloServerPluginLandingPageGraphQLPlayground,
+    ApolloServerPluginLandingPageLocalDefault
+} from "apollo-server-core";
 import {checkAuth, getUserIdFromRefreshToken} from "./services/authService";
 import {graphqlUploadExpress} from "graphql-upload";
 import {FileResolver} from "./data/resolvers/FileResolver";
@@ -116,7 +120,13 @@ const main = async () => {
             }
             return error;
         },
+        csrfPrevention: true,
+        cache: "bounded",
         plugins: [
+            process.env.NODE_ENV === "production" ?
+                ApolloServerPluginLandingPageGraphQLPlayground() :
+                ApolloServerPluginLandingPageLocalDefault()
+            ,
             ApolloServerPluginDrainHttpServer({httpServer}),
             {
                 async serverWillStart() {
