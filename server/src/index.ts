@@ -122,6 +122,7 @@ const main = async () => {
         },
         csrfPrevention: true,
         cache: "bounded",
+        introspection: true,
         plugins: [
             process.env.NODE_ENV === "production" ?
                 ApolloServerPluginLandingPageGraphQLPlayground() :
