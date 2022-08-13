@@ -125,7 +125,7 @@ const main = async () => {
         introspection: true,
         plugins: [
             process.env.NODE_ENV === "production" ?
-                ApolloServerPluginLandingPageGraphQLPlayground() :
+                ApolloServerPluginLandingPageGraphQLPlayground({settings: {"request.credentials": "include"}}) :
                 ApolloServerPluginLandingPageLocalDefault()
             ,
             ApolloServerPluginDrainHttpServer({httpServer}),
