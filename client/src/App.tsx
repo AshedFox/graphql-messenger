@@ -16,6 +16,9 @@ const wsLink = new GraphQLWsLink(createClient({
 
 const uploadLink = createUploadLink({
     credentials: "include",
+    headers: {
+        'apollo-require-preflight': true,
+    },
     uri: `${process.env.REACT_APP_API_URL}/graphql`,
 });
 
