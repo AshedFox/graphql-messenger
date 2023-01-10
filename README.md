@@ -5,6 +5,12 @@ Real-time web-messenger based on Node.js, React and GraphQL
 
 ![App Screenshot](preview.png)
 
+## DEMO
+
+Client app [here](https://graphql-messenger.netlify.app/).
+
+Server app [here](https://graphql-messenger.onrender.com/graphql).
+
 ## How to run locally?
 
 #### Clone the project from GitHub
