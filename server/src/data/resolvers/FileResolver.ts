@@ -1,6 +1,7 @@
 import {Arg, Mutation, Resolver} from "type-graphql";
 import {File} from "../enitities/File";
-import {FileUpload, GraphQLUpload} from "graphql-upload";
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.js';
+import {FileUpload} from 'graphql-upload/Upload.js';
 import {FileService} from "../../services/fileService";
 
 

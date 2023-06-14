@@ -1,5 +1,5 @@
 import {UploadApiResponse, v2} from "cloudinary";
-import {FileUpload} from "graphql-upload";
+import {FileUpload} from "graphql-upload/Upload.js";
 import {FileType} from "../data/enitities/FileType";
 import {v4} from "uuid";
 import {Stream} from "stream";

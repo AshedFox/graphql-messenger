@@ -28,7 +28,7 @@ import {
     ApolloServerPluginLandingPageLocalDefault
 } from "apollo-server-core";
 import {checkAuth, getUserIdFromRefreshToken} from "./services/authService";
-import {graphqlUploadExpress} from "graphql-upload";
+import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.js";
 import {FileResolver} from "./data/resolvers/FileResolver";
 import {ChatInvite} from "./data/enitities/ChatInvite";
 import {ChatInviteResolver} from "./data/resolvers/ChatInviteResolver";
@@ -114,7 +114,7 @@ const main = async () => {
         schema,
         context: ({req, res}: MyContext) => ({req, res}),
         formatError: error => {
-            if (error.extensions.exception.name !== "HttpQueryError") {
+            if (error.originalError?.name !== "HttpQueryError") {
                 console.log(error);
                 return new Error("Unknown error");
             }
