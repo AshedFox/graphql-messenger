@@ -164,7 +164,10 @@ const main = async () => {
   });
 
   await apolloServer.start();
-  apolloServer.applyMiddleware({ app: app as Application, cors: corsOptions });
+  apolloServer.applyMiddleware({
+    app: app as unknown as Application,
+    cors: corsOptions,
+  });
 
   httpServer.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 };
